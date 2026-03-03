@@ -190,6 +190,37 @@ export default function QuotePDF({ quote, onClose }) {
             </div>
           </div>
 
+          {/* Payment Info */}
+          <div className="px-10 py-6 border-t border-gray-100 bg-slate-50/60">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Datos de Pago</p>
+            <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 text-sm">
+              <div>
+                <p className="text-xs text-slate-400">Forma de pago</p>
+                <p className="font-medium text-slate-800">Efectivo, Transferencia o Boleta de Honorarios</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Titular</p>
+                <p className="font-medium text-slate-800">Felipe Aguilar Monsalve</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">RUT</p>
+                <p className="font-medium text-slate-800">18.460.276-8</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Banco</p>
+                <p className="font-medium text-slate-800">Banco de Chile · Cuenta Corriente</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">N° de Cuenta</p>
+                <p className="font-medium text-slate-800">00-804-03035-09</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400">Email de confirmación</p>
+                <p className="font-medium text-slate-800">felipemonsalveaguilar@gmail.com</p>
+              </div>
+            </div>
+          </div>
+
           {/* Notes */}
           {quote.notes && (
             <div className="px-10 py-6 border-t border-gray-100">
