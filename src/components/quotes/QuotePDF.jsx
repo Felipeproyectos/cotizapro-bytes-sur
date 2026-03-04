@@ -144,7 +144,7 @@ export default function QuotePDF({ quote, onClose }) {
           <p className="text-white text-sm font-medium">Vista previa — {paymentType}</p>
           <div className="flex gap-3">
             <button
-              onClick={() => window.print()}
+              onClick={handlePrint}
               className="flex items-center gap-2 bg-white text-slate-900 px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-100"
             >
               <Printer className="w-4 h-4" /> Imprimir / Guardar PDF
