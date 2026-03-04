@@ -309,7 +309,9 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
                     value={item.unit_price || ""} onChange={e => updateItem(idx, "unit_price", e.target.value)} />
                 </div>
                 <div className="md:col-span-1">
-                  <label className="text-xs text-slate-400 mb-1 block">Cant.</label>
+                  <label className="text-xs text-slate-400 mb-1 block">
+                    {services.find(s => s.id === item.service_type_id)?.unit === "metro" ? "Metros" : "Cant."}
+                  </label>
                   <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none"
                     value={item.quantity || ""} onChange={e => updateItem(idx, "quantity", e.target.value)} min="1" />
                 </div>
