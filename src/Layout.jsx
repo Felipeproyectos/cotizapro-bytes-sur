@@ -71,7 +71,7 @@ export default function Layout({ children, currentPageName }) {
         </nav>
 
         <div className="px-4 py-5 border-t border-gray-100">
-          <p className="text-xs text-slate-400 text-center">© 2026 TechQuote</p>
+          <p className="text-xs text-slate-400 text-center">© 2026 WWW.SOLUCIONESFML.CL</p>
         </div>
       </aside>
 
