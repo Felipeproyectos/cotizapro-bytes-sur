@@ -9,16 +9,16 @@ import {
   Menu,
   X,
   Wifi,
-  ChevronRight
-} from "lucide-react";
+  ChevronRight } from
+"lucide-react";
 
 const navItems = [
-  { name: "Dashboard", page: "Dashboard", icon: BarChart3 },
-  { name: "Cotizaciones", page: "Quotes", icon: FileText },
-  { name: "Historial", page: "History", icon: Wrench },
-  { name: "Servicios", page: "Services", icon: Wifi },
-  { name: "Configuración", page: "Settings", icon: Settings },
-];
+{ name: "Dashboard", page: "Dashboard", icon: BarChart3 },
+{ name: "Cotizaciones", page: "Quotes", icon: FileText },
+{ name: "Historial", page: "History", icon: Wrench },
+{ name: "Servicios", page: "Services", icon: Wifi },
+{ name: "Configuración", page: "Settings", icon: Settings }];
+
 
 export default function Layout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -43,7 +43,7 @@ export default function Layout({ children, currentPageName }) {
               <Wifi className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-sm font-700 text-slate-900 font-semibold leading-tight">TechQuote</p>
+              <p className="text-sm font-700 text-slate-900 font-semibold leading-tight">SOLUCIONES  FML</p>
               <p className="text-xs text-slate-400">Sistemas & Redes</p>
             </div>
           </div>
@@ -57,16 +57,16 @@ export default function Layout({ children, currentPageName }) {
                 key={page}
                 to={createPageUrl(page)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group ${
-                  isActive
-                    ? "bg-slate-900 text-white"
-                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                }`}
-              >
+                isActive ?
+                "bg-slate-900 text-white" :
+                "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`
+                }>
+
                 <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-400 group-hover:text-slate-600"}`} />
                 {name}
                 {isActive && <ChevronRight className="w-3 h-3 ml-auto opacity-60" />}
-              </Link>
-            );
+              </Link>);
+
           })}
         </nav>
 
@@ -89,30 +89,30 @@ export default function Layout({ children, currentPageName }) {
       </div>
 
       {/* Mobile Drawer */}
-      {mobileOpen && (
-        <div className="md:hidden fixed inset-0 z-35 bg-black/30" onClick={() => setMobileOpen(false)}>
-          <div className="absolute top-0 left-0 bottom-0 w-64 bg-white shadow-xl pt-20 px-3" onClick={e => e.stopPropagation()}>
+      {mobileOpen &&
+      <div className="md:hidden fixed inset-0 z-35 bg-black/30" onClick={() => setMobileOpen(false)}>
+          <div className="absolute top-0 left-0 bottom-0 w-64 bg-white shadow-xl pt-20 px-3" onClick={(e) => e.stopPropagation()}>
             <nav className="space-y-1">
               {navItems.map(({ name, page, icon: Icon }) => {
-                const isActive = currentPageName === page;
-                return (
-                  <Link
-                    key={page}
-                    to={createPageUrl(page)}
-                    onClick={() => setMobileOpen(false)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                      isActive ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-50"
-                    }`}
-                  >
+              const isActive = currentPageName === page;
+              return (
+                <Link
+                  key={page}
+                  to={createPageUrl(page)}
+                  onClick={() => setMobileOpen(false)}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  isActive ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-50"}`
+                  }>
+
                     <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-400"}`} />
                     {name}
-                  </Link>
-                );
-              })}
+                  </Link>);
+
+            })}
             </nav>
           </div>
         </div>
-      )}
+      }
 
       {/* Main Content */}
       <main className="flex-1 md:ml-64 pt-0 md:pt-0">
@@ -120,6 +120,6 @@ export default function Layout({ children, currentPageName }) {
           {children}
         </div>
       </main>
-    </div>
-  );
+    </div>);
+
 }
