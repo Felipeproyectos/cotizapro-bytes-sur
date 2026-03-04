@@ -25,6 +25,91 @@ export default function QuotePDF({ quote, onClose }) {
   const formatCLP = (n) => `$${Math.round(n || 0).toLocaleString("es-CL")}`;
   const statusColor = STATUS_COLORS[quote.status] || "#94a3b8";
 
+  const handlePrint = () => {
+    const content = document.getElementById("pdf-content").innerHTML;
+    const win = window.open("", "_blank", "width=900,height=700");
+    win.document.write(`<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8"/>
+<title>Cotización ${quote.quote_number}</title>
+<style>
+  @page { size: Letter; margin: 15mm 18mm; }
+  * { font-family: Arial, sans-serif; box-sizing: border-box; }
+  body { margin: 0; padding: 0; background: white; }
+  .px-10 { padding-left: 2.5rem; padding-right: 2.5rem; }
+  .py-8 { padding-top: 2rem; padding-bottom: 2rem; }
+  .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+  .py-5 { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+  .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+  .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+  .py-2\\.5 { padding-top: 0.625rem; padding-bottom: 0.625rem; }
+  .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+  .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+  .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+  .px-4 { padding-left: 1rem; padding-right: 1rem; }
+  .mt-0\\.5 { margin-top: 0.125rem; }
+  .mt-1 { margin-top: 0.25rem; }
+  .mt-2 { margin-top: 0.5rem; }
+  .mt-3 { margin-top: 0.75rem; }
+  .mt-5 { margin-top: 1.25rem; }
+  .mb-3 { margin-bottom: 0.75rem; }
+  .mb-0\\.5 { margin-bottom: 0.125rem; }
+  .gap-10 { gap: 2.5rem; }
+  .gap-x-8 { column-gap: 2rem; }
+  .gap-y-1\\.5 { row-gap: 0.375rem; }
+  .gap-y-1 { row-gap: 0.25rem; }
+  .w-64 { width: 16rem; }
+  .space-y-1\\.5 > * + * { margin-top: 0.375rem; }
+  .text-xl { font-size: 1.25rem; }
+  .text-sm { font-size: 0.875rem; }
+  .text-xs { font-size: 0.75rem; }
+  .text-base { font-size: 1rem; }
+  .font-bold { font-weight: 700; }
+  .font-semibold { font-weight: 600; }
+  .font-medium { font-weight: 500; }
+  .tracking-tight { letter-spacing: -0.025em; }
+  .tracking-widest { letter-spacing: 0.1em; }
+  .uppercase { text-transform: uppercase; }
+  .whitespace-pre-line { white-space: pre-line; }
+  .leading-relaxed { line-height: 1.625; }
+  .text-white { color: white; }
+  .text-slate-900 { color: #0f172a; }
+  .text-slate-800 { color: #1e293b; }
+  .text-slate-700 { color: #334155; }
+  .text-slate-600 { color: #475569; }
+  .text-slate-500 { color: #64748b; }
+  .text-slate-400 { color: #94a3b8; }
+  .text-slate-300 { color: #cbd5e1; }
+  .text-emerald-600 { color: #059669; }
+  .text-red-500 { color: #ef4444; }
+  .text-red-600 { color: #dc2626; }
+  .border-t { border-top: 1px solid; }
+  .border-gray-100 { border-color: #f3f4f6; }
+  .border-gray-200 { border-color: #e5e7eb; }
+  .border-collapse { border-collapse: collapse; }
+  .w-full { width: 100%; }
+  .flex { display: flex; }
+  .grid { display: grid; }
+  .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .items-start { align-items: flex-start; }
+  .justify-between { justify-content: space-between; }
+  .justify-end { justify-content: flex-end; }
+  .text-right { text-align: right; }
+  .text-left { text-align: left; }
+  .text-center { text-align: center; }
+  .inline-block { display: inline-block; }
+  .rounded-full { border-radius: 9999px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 0.5rem 0.75rem; }
+  th { font-size: 0.75rem; font-weight: 600; color: #64748b; background: #f8fafc; text-align: left; }
+  td { font-size: 0.875rem; border-bottom: 1px solid #f1f5f9; }
+</style>
+</head><body>${content}</body></html>`);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 500);
+  };
+
   const totalAbonos = (quote.abonos || []).reduce((s, a) => s + (a.monto || 0), 0);
   const saldoPendiente = (quote.total || 0) - totalAbonos;
 
