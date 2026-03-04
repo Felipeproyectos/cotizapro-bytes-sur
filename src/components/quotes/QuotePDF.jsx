@@ -26,88 +26,186 @@ export default function QuotePDF({ quote, onClose }) {
   const statusColor = STATUS_COLORS[quote.status] || "#94a3b8";
 
   const handlePrint = () => {
-    const content = document.getElementById("pdf-content").innerHTML;
-    const win = window.open("", "_blank", "width=900,height=700");
-    win.document.write(`<!DOCTYPE html>
+    const retencion2 = isHonorarios ? Math.round((quote.subtotal || 0) * 0.1075) : 0;
+    const liquidoH = isHonorarios ? (quote.subtotal || 0) - retencion2 : 0;
+
+    const html = `<!DOCTYPE html>
 <html><head>
 <meta charset="utf-8"/>
 <title>Cotización ${quote.quote_number}</title>
 <style>
-  @page { size: Letter; margin: 15mm 18mm; }
-  * { font-family: Arial, sans-serif; box-sizing: border-box; }
-  body { margin: 0; padding: 0; background: white; }
-  .px-10 { padding-left: 2.5rem; padding-right: 2.5rem; }
-  .py-8 { padding-top: 2rem; padding-bottom: 2rem; }
-  .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
-  .py-5 { padding-top: 1.25rem; padding-bottom: 1.25rem; }
-  .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
-  .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
-  .py-2\\.5 { padding-top: 0.625rem; padding-bottom: 0.625rem; }
-  .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-  .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
-  .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
-  .px-4 { padding-left: 1rem; padding-right: 1rem; }
-  .mt-0\\.5 { margin-top: 0.125rem; }
-  .mt-1 { margin-top: 0.25rem; }
-  .mt-2 { margin-top: 0.5rem; }
-  .mt-3 { margin-top: 0.75rem; }
-  .mt-5 { margin-top: 1.25rem; }
-  .mb-3 { margin-bottom: 0.75rem; }
-  .mb-0\\.5 { margin-bottom: 0.125rem; }
-  .gap-10 { gap: 2.5rem; }
-  .gap-x-8 { column-gap: 2rem; }
-  .gap-y-1\\.5 { row-gap: 0.375rem; }
-  .gap-y-1 { row-gap: 0.25rem; }
-  .w-64 { width: 16rem; }
-  .space-y-1\\.5 > * + * { margin-top: 0.375rem; }
-  .text-xl { font-size: 1.25rem; }
-  .text-sm { font-size: 0.875rem; }
-  .text-xs { font-size: 0.75rem; }
-  .text-base { font-size: 1rem; }
-  .font-bold { font-weight: 700; }
-  .font-semibold { font-weight: 600; }
-  .font-medium { font-weight: 500; }
-  .tracking-tight { letter-spacing: -0.025em; }
-  .tracking-widest { letter-spacing: 0.1em; }
-  .uppercase { text-transform: uppercase; }
-  .whitespace-pre-line { white-space: pre-line; }
-  .leading-relaxed { line-height: 1.625; }
-  .text-white { color: white; }
-  .text-slate-900 { color: #0f172a; }
-  .text-slate-800 { color: #1e293b; }
-  .text-slate-700 { color: #334155; }
-  .text-slate-600 { color: #475569; }
-  .text-slate-500 { color: #64748b; }
-  .text-slate-400 { color: #94a3b8; }
-  .text-slate-300 { color: #cbd5e1; }
-  .text-emerald-600 { color: #059669; }
-  .text-red-500 { color: #ef4444; }
-  .text-red-600 { color: #dc2626; }
-  .border-t { border-top: 1px solid; }
-  .border-gray-100 { border-color: #f3f4f6; }
-  .border-gray-200 { border-color: #e5e7eb; }
-  .border-collapse { border-collapse: collapse; }
-  .w-full { width: 100%; }
-  .flex { display: flex; }
-  .grid { display: grid; }
-  .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .items-start { align-items: flex-start; }
-  .justify-between { justify-content: space-between; }
-  .justify-end { justify-content: flex-end; }
-  .text-right { text-align: right; }
-  .text-left { text-align: left; }
-  .text-center { text-align: center; }
-  .inline-block { display: inline-block; }
-  .rounded-full { border-radius: 9999px; }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { padding: 0.5rem 0.75rem; }
-  th { font-size: 0.75rem; font-weight: 600; color: #64748b; background: #f8fafc; text-align: left; }
-  td { font-size: 0.875rem; border-bottom: 1px solid #f1f5f9; }
+  @page { size: Letter; margin: 12mm 15mm; }
+  * { font-family: Arial, Helvetica, sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: white; color: #0f172a; font-size: 13px; }
+  /* Header */
+  .header { background: #0f172a; color: white; padding: 28px 36px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .header-left h1 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .header-left p { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+  .header-right { text-align: right; }
+  .header-right .label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .header-right .number { font-size: 18px; font-weight: 700; color: white; }
+  .header-right .date { font-size: 11px; color: #94a3b8; margin-top: 3px; }
+  .badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 999px; margin-top: 8px; background: ${statusColor}30; color: ${statusColor}; }
+  /* Sections */
+  .section { padding: 18px 36px; border-bottom: 1px solid #f1f5f9; }
+  .section-title { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  /* Grid 2 cols */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; }
+  .field-label { font-size: 10px; color: #94a3b8; margin-bottom: 1px; }
+  .field-value { font-size: 12px; color: #1e293b; font-weight: 500; }
+  /* Table */
+  table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+  thead tr { background: #f8fafc; }
+  th { font-size: 10px; font-weight: 600; color: #64748b; padding: 8px 10px; text-align: left; }
+  th.right { text-align: right; }
+  th.center { text-align: center; }
+  td { font-size: 12px; padding: 9px 10px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: top; }
+  td.center { text-align: center; }
+  td.right { text-align: right; }
+  td.bold { font-weight: 600; color: #0f172a; }
+  td .sub { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+  /* Totals */
+  .totals { margin-top: 14px; display: flex; justify-content: flex-end; }
+  .totals-box { width: 230px; }
+  .total-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; }
+  .total-row span:first-child { color: #64748b; }
+  .total-row span:last-child { font-weight: 500; color: #0f172a; }
+  .total-row.final { border-top: 1px solid #e2e8f0; padding-top: 7px; margin-top: 5px; }
+  .total-row.final span { font-weight: 700; font-size: 14px; }
+  .total-note { font-size: 10px; color: #94a3b8; margin-top: 4px; text-align: right; }
+  .red { color: #dc2626; }
+  .green { color: #059669; }
+  /* Payment */
+  .payment-section { padding: 16px 36px; background: #f8fafc; border-bottom: 1px solid #f1f5f9; }
+  /* Notes */
+  .notes { padding: 16px 36px; border-bottom: 1px solid #f1f5f9; }
+  .notes p { font-size: 12px; color: #475569; line-height: 1.6; white-space: pre-line; }
+  /* Footer */
+  .footer { padding: 12px 36px; text-align: center; }
+  .footer p { font-size: 10px; color: #94a3b8; }
 </style>
-</head><body>${content}</body></html>`);
+</head><body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>${company?.company_name || "Mi Empresa"}</h1>
+    ${company?.rut ? `<p>RUT: ${company.rut}</p>` : ""}
+    ${company?.address ? `<p>${company.address}</p>` : ""}
+    ${company?.phone ? `<p>${company.phone}</p>` : ""}
+    ${company?.email ? `<p>${company.email}</p>` : ""}
+  </div>
+  <div class="header-right">
+    <div class="label">${isHonorarios ? "Boleta de Honorarios" : "Cotización"}</div>
+    <div class="number">${quote.quote_number}</div>
+    <div class="date">${format(new Date(quote.created_date), "dd 'de' MMMM, yyyy", { locale: es })}</div>
+    ${quote.valid_until ? `<div class="date">Válida hasta: ${format(new Date(quote.valid_until), "dd MMM yyyy", { locale: es })}</div>` : ""}
+    <div class="badge">${STATUS_LABELS[quote.status] || quote.status}</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Datos del Cliente</div>
+  <div class="grid2">
+    <div><div class="field-label">Nombre</div><div class="field-value">${quote.client_name}</div></div>
+    ${quote.client_company ? `<div><div class="field-label">Empresa</div><div class="field-value">${quote.client_company}</div></div>` : ""}
+    ${quote.client_rut ? `<div><div class="field-label">RUT</div><div class="field-value">${quote.client_rut}</div></div>` : ""}
+    ${quote.client_email ? `<div><div class="field-label">Email</div><div class="field-value">${quote.client_email}</div></div>` : ""}
+    ${quote.client_phone ? `<div><div class="field-label">Teléfono</div><div class="field-value">${quote.client_phone}</div></div>` : ""}
+    ${quote.client_address ? `<div><div class="field-label">Dirección</div><div class="field-value">${quote.client_address}</div></div>` : ""}
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Detalle de Servicios</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Descripción</th>
+        <th class="center">Cant.</th>
+        <th class="right">P. Unit.</th>
+        <th class="right">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${(quote.items || []).map(item => `
+      <tr>
+        <td class="bold">
+          ${item.service_name || item.description}
+          ${item.service_name && item.description ? `<div class="sub">${item.description}</div>` : ""}
+        </td>
+        <td class="center">${item.quantity}</td>
+        <td class="right">$${Math.round(item.unit_price || 0).toLocaleString("es-CL")}</td>
+        <td class="right bold">$${Math.round(item.total || 0).toLocaleString("es-CL")}</td>
+      </tr>`).join("")}
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div class="totals-box">
+      <div class="total-row"><span>Subtotal</span><span>$${Math.round(quote.subtotal || 0).toLocaleString("es-CL")}</span></div>
+      ${paymentType === "Con IVA (19%)" ? `<div class="total-row"><span>IVA (19%)</span><span>$${Math.round(quote.iva_amount || 0).toLocaleString("es-CL")}</span></div>` : ""}
+      ${isHonorarios ? `
+        <div class="total-row"><span>Retención (10,75%)</span><span class="red">-$${Math.round(retencion2).toLocaleString("es-CL")}</span></div>
+        <div class="total-row"><span>Líquido a pagar</span><span>$${Math.round(liquidoH).toLocaleString("es-CL")}</span></div>
+      ` : ""}
+      <div class="total-row final"><span>Total</span><span>$${Math.round(quote.total || 0).toLocaleString("es-CL")}</span></div>
+      ${paymentType === "Sin IVA" ? `<div class="total-note">* Precio no incluye IVA</div>` : ""}
+    </div>
+  </div>
+</div>
+
+${(quote.abonos || []).length > 0 ? `
+<div class="section">
+  <div class="section-title">Abonos Recibidos</div>
+  <table>
+    <thead><tr>
+      <th>Fecha</th><th>Nota</th><th class="right">Monto</th>
+    </tr></thead>
+    <tbody>
+      ${(quote.abonos || []).map(a => `
+      <tr>
+        <td>${a.fecha ? format(new Date(a.fecha), "dd/MM/yyyy") : "—"}</td>
+        <td>${a.nota || "—"}</td>
+        <td class="right green">$${Math.round(a.monto || 0).toLocaleString("es-CL")}</td>
+      </tr>`).join("")}
+    </tbody>
+  </table>
+  <div style="display:flex;justify-content:flex-end;gap:40px;margin-top:10px;font-size:12px;">
+    <div style="text-align:right"><div style="color:#64748b">Total abonado</div><div style="font-weight:600;color:#059669">$${Math.round(totalAbonos).toLocaleString("es-CL")}</div></div>
+    <div style="text-align:right"><div style="color:#64748b">Saldo pendiente</div><div style="font-weight:700;font-size:14px;color:${saldoPendiente <= 0 ? "#059669" : "#ef4444"}">$${Math.round(saldoPendiente).toLocaleString("es-CL")}</div></div>
+  </div>
+</div>` : ""}
+
+<div class="payment-section">
+  <div class="section-title">Datos de Pago</div>
+  <div class="grid2">
+    <div><div class="field-label">Forma de pago</div><div class="field-value">Efectivo, Transferencia o Boleta de Honorarios</div></div>
+    <div><div class="field-label">Titular</div><div class="field-value">Felipe Aguilar Monsalve</div></div>
+    <div><div class="field-label">RUT</div><div class="field-value">18.460.276-8</div></div>
+    <div><div class="field-label">Banco</div><div class="field-value">Banco de Chile · Cuenta Corriente</div></div>
+    <div><div class="field-label">N° de Cuenta</div><div class="field-value">00-804-03035-09</div></div>
+    <div><div class="field-label">Email de confirmación</div><div class="field-value">felipemonsalveaguilar@gmail.com</div></div>
+  </div>
+</div>
+
+${quote.notes ? `
+<div class="notes">
+  <div class="section-title">Notas y Condiciones</div>
+  <p>${quote.notes}</p>
+</div>` : ""}
+
+<div class="footer">
+  <p>${company?.company_name || "Mi Empresa"}${company?.email ? ` · ${company.email}` : ""}${company?.phone ? ` · ${company.phone}` : ""}</p>
+  <p style="margin-top:2px;color:#cbd5e1;">Documento generado digitalmente</p>
+</div>
+
+</body></html>`;
+
+    const win = window.open("", "_blank", "width=900,height=700");
+    win.document.write(html);
     win.document.close();
     win.focus();
-    setTimeout(() => { win.print(); }, 500);
+    setTimeout(() => { win.print(); }, 600);
   };
 
   const totalAbonos = (quote.abonos || []).reduce((s, a) => s + (a.monto || 0), 0);
