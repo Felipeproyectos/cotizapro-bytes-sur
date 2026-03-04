@@ -121,22 +121,7 @@ export default function QuotePDF({ quote, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center overflow-y-auto py-6 px-4">
-      <style>{`
-        @media print {
-          body > * { display: none !important; }
-          #pdf-modal { display: block !important; position: fixed; inset: 0; background: white; padding: 0; margin: 0; }
-          #pdf-toolbar { display: none !important; }
-          #pdf-content {
-            width: 216mm;
-            min-height: 279mm;
-            margin: 0 auto;
-            box-shadow: none !important;
-            border-radius: 0 !important;
-            padding: 20mm 18mm !important;
-          }
-        }
-        @page { size: Letter; margin: 20mm 18mm; }
-      `}</style>
+      
 
       <div id="pdf-modal" className="w-full max-w-3xl">
         {/* Toolbar */}
