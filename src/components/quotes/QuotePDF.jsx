@@ -247,10 +247,7 @@ ${quote.notes ? `
                 {quote.valid_until && (
                   <p className="text-slate-400 text-xs">Válida hasta: {format(new Date(quote.valid_until), "dd MMM yyyy", { locale: es })}</p>
                 )}
-                <span className="inline-block mt-2 text-xs font-bold px-3 py-1 rounded-full"
-                  style={{ background: statusColor + "30", color: statusColor }}>
-                  {STATUS_LABELS[quote.status]}
-                </span>
+                
               </div>
             </div>
           </div>
