@@ -156,6 +156,18 @@ export default function Quotes() {
                   <div className="text-right shrink-0">
                     <p className="text-sm font-bold text-slate-900">{formatCLP(q.total)}</p>
                     <p className="text-xs text-slate-400">{(q.items || []).length} ítem(s)</p>
+                    {(q.abonos || []).length > 0 && (() => {
+                      const totalAbonos = q.abonos.reduce((s, a) => s + (a.monto || 0), 0);
+                      const saldo = (q.total || 0) - totalAbonos;
+                      return (
+                        <div className="mt-1">
+                          <p className="text-xs text-emerald-600">Abonado: {formatCLP(totalAbonos)}</p>
+                          <p className={`text-xs font-semibold ${saldo <= 0 ? "text-emerald-600" : "text-red-500"}`}>
+                            Saldo: {formatCLP(saldo)}
+                          </p>
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <button onClick={() => { setSelected(q); setView("pdf"); }} className="p-2 hover:bg-gray-100 rounded-lg" title="Ver PDF">
