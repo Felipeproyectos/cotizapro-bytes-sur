@@ -25,10 +25,15 @@ export default function QuotePDF({ quote, onClose }) {
   const formatCLP = (n) => `$${Math.round(n || 0).toLocaleString("es-CL")}`;
   const statusColor = STATUS_COLORS[quote.status] || "#94a3b8";
 
-  const handlePrint = () => {
-    const retencion2 = isHonorarios ? Math.round((quote.subtotal || 0) * 0.1075) : 0;
-    const liquidoH = isHonorarios ? (quote.subtotal || 0) - retencion2 : 0;
+  // Calcular variables necesarias
+  const totalAbonos = (quote.abonos || []).reduce((s, a) => s + (a.monto || 0), 0);
+  const saldoPendiente = (quote.total || 0) - totalAbonos;
+  const paymentType = quote.payment_type || (quote.include_iva ? "Con IVA (19%)" : "Sin IVA");
+  const isHonorarios = paymentType === "Boleta de Honorarios";
+  const retencion = isHonorarios ? Math.round((quote.subtotal || 0) * 0.1075) : 0;
+  const liquidoHonorarios = isHonorarios ? (quote.subtotal || 0) - retencion : 0;
 
+  const handlePrint = () => {
     const html = `<!DOCTYPE html>
 <html><head>
 <meta charset="utf-8"/>
@@ -37,25 +42,21 @@ export default function QuotePDF({ quote, onClose }) {
   @page { size: Letter; margin: 12mm 15mm; }
   * { font-family: Arial, Helvetica, sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
   body { background: white; color: #0f172a; font-size: 13px; }
-  /* Header */
-  .header { background: #0f172a; color: white; padding: 28px 36px; display: flex; justify-content: space-between; align-items: flex-start; }
-  .header-left h1 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .header { background: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: white; padding: 28px 36px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .header-left h1 { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: white; }
   .header-left p { font-size: 11px; color: #94a3b8; margin-top: 2px; }
   .header-right { text-align: right; }
   .header-right .label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
   .header-right .number { font-size: 18px; font-weight: 700; color: white; }
   .header-right .date { font-size: 11px; color: #94a3b8; margin-top: 3px; }
-  .badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 999px; margin-top: 8px; background: ${statusColor}30; color: ${statusColor}; }
-  /* Sections */
+  .badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 999px; margin-top: 8px; background: ${statusColor}40 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: ${statusColor}; }
   .section { padding: 18px 36px; border-bottom: 1px solid #f1f5f9; }
   .section-title { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
-  /* Grid 2 cols */
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; }
   .field-label { font-size: 10px; color: #94a3b8; margin-bottom: 1px; }
   .field-value { font-size: 12px; color: #1e293b; font-weight: 500; }
-  /* Table */
   table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-  thead tr { background: #f8fafc; }
+  thead tr { background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   th { font-size: 10px; font-weight: 600; color: #64748b; padding: 8px 10px; text-align: left; }
   th.right { text-align: right; }
   th.center { text-align: center; }
@@ -63,8 +64,7 @@ export default function QuotePDF({ quote, onClose }) {
   td.center { text-align: center; }
   td.right { text-align: right; }
   td.bold { font-weight: 600; color: #0f172a; }
-  td .sub { font-size: 10px; color: #94a3b8; margin-top: 2px; }
-  /* Totals */
+  .sub { font-size: 10px; color: #94a3b8; margin-top: 2px; }
   .totals { margin-top: 14px; display: flex; justify-content: flex-end; }
   .totals-box { width: 230px; }
   .total-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; }
@@ -75,12 +75,9 @@ export default function QuotePDF({ quote, onClose }) {
   .total-note { font-size: 10px; color: #94a3b8; margin-top: 4px; text-align: right; }
   .red { color: #dc2626; }
   .green { color: #059669; }
-  /* Payment */
-  .payment-section { padding: 16px 36px; background: #f8fafc; border-bottom: 1px solid #f1f5f9; }
-  /* Notes */
+  .payment-section { padding: 16px 36px; background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border-bottom: 1px solid #f1f5f9; }
   .notes { padding: 16px 36px; border-bottom: 1px solid #f1f5f9; }
   .notes p { font-size: 12px; color: #475569; line-height: 1.6; white-space: pre-line; }
-  /* Footer */
   .footer { padding: 12px 36px; text-align: center; }
   .footer p { font-size: 10px; color: #94a3b8; }
 </style>
@@ -139,14 +136,13 @@ export default function QuotePDF({ quote, onClose }) {
       </tr>`).join("")}
     </tbody>
   </table>
-
   <div class="totals">
     <div class="totals-box">
       <div class="total-row"><span>Subtotal</span><span>$${Math.round(quote.subtotal || 0).toLocaleString("es-CL")}</span></div>
       ${paymentType === "Con IVA (19%)" ? `<div class="total-row"><span>IVA (19%)</span><span>$${Math.round(quote.iva_amount || 0).toLocaleString("es-CL")}</span></div>` : ""}
       ${isHonorarios ? `
-        <div class="total-row"><span>Retención (10,75%)</span><span class="red">-$${Math.round(retencion2).toLocaleString("es-CL")}</span></div>
-        <div class="total-row"><span>Líquido a pagar</span><span>$${Math.round(liquidoH).toLocaleString("es-CL")}</span></div>
+        <div class="total-row"><span>Retención (10,75%)</span><span class="red">-$${Math.round(retencion).toLocaleString("es-CL")}</span></div>
+        <div class="total-row"><span>Líquido a pagar</span><span>$${Math.round(liquidoHonorarios).toLocaleString("es-CL")}</span></div>
       ` : ""}
       <div class="total-row final"><span>Total</span><span>$${Math.round(quote.total || 0).toLocaleString("es-CL")}</span></div>
       ${paymentType === "Sin IVA" ? `<div class="total-note">* Precio no incluye IVA</div>` : ""}
@@ -208,22 +204,11 @@ ${quote.notes ? `
     setTimeout(() => { win.print(); }, 600);
   };
 
-  const totalAbonos = (quote.abonos || []).reduce((s, a) => s + (a.monto || 0), 0);
-  const saldoPendiente = (quote.total || 0) - totalAbonos;
-
-  const paymentType = quote.payment_type || (quote.include_iva ? "Con IVA (19%)" : "Sin IVA");
-  const isHonorarios = paymentType === "Boleta de Honorarios";
-  // Boleta honorarios: retención 10.75% sobre el bruto
-  const retencion = isHonorarios ? Math.round((quote.subtotal || 0) * 0.1075) : 0;
-  const liquidoHonorarios = isHonorarios ? (quote.subtotal || 0) - retencion : 0;
-
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center overflow-y-auto py-6 px-4">
-      
-
-      <div id="pdf-modal" className="w-full max-w-3xl">
+      <div className="w-full max-w-3xl">
         {/* Toolbar */}
-        <div id="pdf-toolbar" className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4">
           <p className="text-white text-sm font-medium">Vista previa — {paymentType}</p>
           <div className="flex gap-3">
             <button
@@ -238,8 +223,8 @@ ${quote.notes ? `
           </div>
         </div>
 
-        {/* PDF Content */}
-        <div id="pdf-content" className="bg-white rounded-xl shadow-2xl overflow-hidden" style={{ fontFamily: "'Arial', sans-serif" }}>
+        {/* PDF Content Preview */}
+        <div className="bg-white rounded-xl shadow-2xl overflow-hidden" style={{ fontFamily: "'Arial', sans-serif" }}>
 
           {/* Header */}
           <div style={{ background: "#0f172a" }} className="px-10 py-8 text-white">
