@@ -96,7 +96,7 @@ export default function QuotePDF({ quote, onClose }) {
     <div class="number">${quote.quote_number}</div>
     <div class="date">${format(new Date(quote.created_date), "dd 'de' MMMM, yyyy", { locale: es })}</div>
     ${quote.valid_until ? `<div class="date">Válida hasta: ${format(new Date(quote.valid_until), "dd MMM yyyy", { locale: es })}</div>` : ""}
-    <div class="badge">${STATUS_LABELS[quote.status] || quote.status}</div>
+    
   </div>
 </div>
 
