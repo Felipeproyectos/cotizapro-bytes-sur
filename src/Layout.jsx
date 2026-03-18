@@ -23,6 +23,18 @@ const navItems = [
 
 export default function Layout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [company, setCompany] = useState(null);
+
+  useEffect(() => {
+    base44.entities.CompanySettings.list().then(data => {
+      if (data && data.length > 0) setCompany(data[0]);
+    });
+    // Suscribirse a cambios en tiempo real
+    const unsub = base44.entities.CompanySettings.subscribe((event) => {
+      if (event.data) setCompany(event.data);
+    });
+    return () => unsub();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
