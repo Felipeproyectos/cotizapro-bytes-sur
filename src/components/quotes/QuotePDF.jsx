@@ -95,6 +95,7 @@ export default function QuotePDF({ quote, onClose }) {
   <div class="header-right">
     <div class="label">${isHonorarios ? "Boleta de Honorarios" : "Cotización"}</div>
     <div class="number">${quote.quote_number}</div>
+    ${quote.title ? `<div style="color:#cbd5e1;font-size:12px;margin-top:3px;font-weight:500;">${quote.title}</div>` : ""}
     <div class="date">${format(new Date(quote.created_date), "dd 'de' MMMM, yyyy", { locale: es })}</div>
     ${quote.valid_until ? `<div class="date">Válida hasta: ${format(new Date(quote.valid_until), "dd MMM yyyy", { locale: es })}</div>` : ""}
     
@@ -245,6 +246,7 @@ ${quote.notes ? `
                   {isHonorarios ? "Boleta de Honorarios" : "Cotización"}
                 </p>
                 <p className="text-xl font-bold">{quote.quote_number}</p>
+                {quote.title && <p className="text-slate-300 text-sm mt-1 font-medium">{quote.title}</p>}
                 <p className="text-slate-400 text-xs mt-1">
                   {format(new Date(quote.created_date), "dd 'de' MMMM, yyyy", { locale: es })}
                 </p>
