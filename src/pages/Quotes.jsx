@@ -160,6 +160,7 @@ export default function Quotes() {
                         {q.status}
                       </span>
                     </div>
+                    {q.title && <p className="text-xs font-medium text-slate-600 mt-0.5">{q.title}</p>}
                     <div className="flex items-center gap-3 mt-1 flex-wrap">
                       <p className="text-xs text-slate-400">{q.quote_number}</p>
                       <p className="text-xs text-slate-400">

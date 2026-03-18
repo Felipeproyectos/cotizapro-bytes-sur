@@ -18,6 +18,7 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [form, setForm] = useState({
     quote_number: generateQuoteNumber(),
+    title: "",
     client_name: "",
     client_company: "",
     client_rut: "",
