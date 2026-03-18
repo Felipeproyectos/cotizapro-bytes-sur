@@ -42,6 +42,20 @@ export default function Quotes() {
     load();
   };
 
+  const handleDuplicate = async (q) => {
+    const now = new Date();
+    const newNumber = `COT-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}-${Math.floor(Math.random()*900+100)}`;
+    const { id, created_date, updated_date, created_by, ...rest } = q;
+    await base44.entities.Quote.create({
+      ...rest,
+      quote_number: newNumber,
+      status: "Borrador",
+      abonos: [],
+      valid_until: formatDate(addDays(new Date(), 30), "yyyy-MM-dd"),
+    });
+    load();
+  };
+
   const filtered = quotes.filter(q => {
     const matchStatus = statusFilter === "Todos" || q.status === statusFilter;
     const matchSearch = !search ||

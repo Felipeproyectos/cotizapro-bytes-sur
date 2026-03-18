@@ -19,11 +19,17 @@ export default function History() {
   const [search, setSearch] = useState("");
   const [pdfQuote, setPdfQuote] = useState(null);
 
+  const [tab, setTab] = useState("activas"); // activas | eliminadas
+  const [deleted, setDeleted] = useState([]);
+
   useEffect(() => {
     base44.entities.Quote.list("-created_date").then(data => {
-      // Show only executed/accepted
       setQuotes(data.filter(q => q.status === "Ejecutada" || q.status === "Aceptada"));
       setLoading(false);
+    });
+    // Load all quotes to find "deleted" ones - we track them via a special status
+    base44.entities.Quote.filter({ status: "Rechazada" }, "-created_date").then(data => {
+      setDeleted(data);
     });
   }, []);
 

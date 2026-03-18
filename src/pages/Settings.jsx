@@ -18,6 +18,7 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   useEffect(() => {
     base44.entities.CompanySettings.list().then(data => {
