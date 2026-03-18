@@ -200,9 +200,44 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
               value={form.valid_until} onChange={e => setField("valid_until", e.target.value)} />
           </div>
         </div>
-        {/* Tipo de cobro */}
+        {/* Tipo de cobro recurrente */}
         <div className="mt-4">
-          <label className="text-xs font-medium text-slate-500 mb-2 block">Tipo de documento / cobro</label>
+          <label className="text-xs font-medium text-slate-500 mb-2 block">Tipo de cobro</label>
+          <div className="flex gap-3">
+            {["Único", "Mensual"].map(opt => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => setField("billing_type", opt)}
+                className={`px-4 py-2 rounded-xl text-xs font-medium border transition-colors ${
+                  form.billing_type === opt
+                    ? "bg-slate-900 text-white border-slate-900"
+                    : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"
+                }`}
+              >
+                {opt === "Mensual" ? "🔄 Mensual" : "1️⃣ Único"}
+              </button>
+            ))}
+          </div>
+          {form.billing_type === "Mensual" && (
+            <div className="mt-3 flex items-center gap-3">
+              <label className="text-xs font-medium text-slate-500 whitespace-nowrap">Día de cobro (cada mes):</label>
+              <input
+                type="number"
+                min="1"
+                max="28"
+                className="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                value={form.billing_day || 5}
+                onChange={e => setField("billing_day", parseInt(e.target.value))}
+              />
+              <span className="text-xs text-slate-400">de cada mes</span>
+            </div>
+          )}
+        </div>
+
+        {/* Tipo de documento */}
+        <div className="mt-4">
+          <label className="text-xs font-medium text-slate-500 mb-2 block">Tipo de documento / impuesto</label>
           <div className="flex gap-3 flex-wrap">
             {["Sin IVA", "Con IVA (19%)", "Boleta de Honorarios"].map(opt => (
               <button
