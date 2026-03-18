@@ -19,6 +19,8 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
   const [form, setForm] = useState({
     quote_number: generateQuoteNumber(),
     title: "",
+    billing_type: "Único",
+    billing_day: 5,
     client_name: "",
     client_company: "",
     client_rut: "",
