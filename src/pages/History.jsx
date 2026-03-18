@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CheckCircle, Clock, Search, Download, ArrowUpRight } from "lucide-react";
+import { CheckCircle, Clock, Search, Download, ArrowUpRight, Trash2 } from "lucide-react";
 import QuotePDF from "../components/quotes/QuotePDF";
 
 const STATUS_COLORS = {

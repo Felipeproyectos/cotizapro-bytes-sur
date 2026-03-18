@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Check, Building2, Upload } from "lucide-react";
+import { Check, Building2, Upload, ImageIcon } from "lucide-react";
 
 export default function Settings() {
   const [form, setForm] = useState({

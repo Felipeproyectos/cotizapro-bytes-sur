@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Plus, FileText, Search, Eye, Pencil, Trash2, Download } from "lucide-react";
+import { Plus, FileText, Search, Eye, Pencil, Trash2, Download, Copy } from "lucide-react";
+import { addDays, format as formatDate } from "date-fns";
 import QuoteForm from "../components/quotes/QuoteForm";
 import QuotePDF from "../components/quotes/QuotePDF";
 
