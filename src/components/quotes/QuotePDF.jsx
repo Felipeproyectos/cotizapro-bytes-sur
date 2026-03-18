@@ -85,6 +85,7 @@ export default function QuotePDF({ quote, onClose }) {
 
 <div class="header">
   <div class="header-left">
+    ${company?.logo_url ? `<img src="${company.logo_url}" alt="Logo" style="max-height:52px;max-width:140px;object-fit:contain;margin-bottom:8px;display:block;" />` : ""}
     <h1>${company?.company_name || "Mi Empresa"}</h1>
     ${company?.rut ? `<p>RUT: ${company.rut}</p>` : ""}
     ${company?.address ? `<p>${company.address}</p>` : ""}
@@ -230,6 +231,9 @@ ${quote.notes ? `
           <div style={{ background: "#0f172a" }} className="px-10 py-8 text-white">
             <div className="flex items-start justify-between">
               <div>
+                {company?.logo_url && (
+                  <img src={company.logo_url} alt="Logo" className="max-h-12 max-w-32 object-contain mb-2" />
+                )}
                 <h1 className="text-xl font-bold tracking-tight">{company?.company_name || "Mi Empresa"}</h1>
                 {company?.rut && <p className="text-slate-400 text-xs mt-1">RUT: {company.rut}</p>}
                 {company?.address && <p className="text-slate-400 text-xs">{company.address}</p>}
