@@ -111,65 +111,105 @@ export default function History() {
           <div className="flex justify-center py-20">
             <div className="w-6 h-6 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center">
-            <Clock className="w-10 h-10 text-slate-200 mx-auto mb-3" />
-            <p className="text-slate-400 text-sm">No hay trabajos ejecutados aún</p>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {Object.entries(grouped).map(([month, items]) => (
-              <div key={month}>
-                <div className="flex items-center gap-3 mb-3">
-                  <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest capitalize">{month}</h2>
-                  <div className="flex-1 h-px bg-gray-100" />
-                  <span className="text-xs text-slate-400">{formatCLP(items.reduce((s, q) => s + (q.total || 0), 0))}</span>
-                </div>
-                <div className="space-y-2">
-                  {items.map(q => {
-                    const sc = STATUS_COLORS[q.status] || { bg: "#94a3b820", text: "#94a3b8" };
-                    return (
-                      <div key={q.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4 flex items-center gap-4">
-                        <div className="w-9 h-9 bg-gray-50 rounded-xl flex items-center justify-center shrink-0">
-                          <CheckCircle className="w-4 h-4 text-emerald-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-semibold text-slate-900">{q.client_name}</p>
-                            {q.client_company && <span className="text-xs text-slate-400">· {q.client_company}</span>}
+        ) : tab === "activas" ? (
+          filtered.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center">
+              <Clock className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+              <p className="text-slate-400 text-sm">No hay trabajos ejecutados aún</p>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {Object.entries(grouped).map(([month, items]) => (
+                <div key={month}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest capitalize">{month}</h2>
+                    <div className="flex-1 h-px bg-gray-100" />
+                    <span className="text-xs text-slate-400">{formatCLP(items.reduce((s, q) => s + (q.total || 0), 0))}</span>
+                  </div>
+                  <div className="space-y-2">
+                    {items.map(q => {
+                      const sc = STATUS_COLORS[q.status] || { bg: "#94a3b820", text: "#94a3b8" };
+                      return (
+                        <div key={q.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4 flex items-center gap-4">
+                          <div className="w-9 h-9 bg-gray-50 rounded-xl flex items-center justify-center shrink-0">
+                            <CheckCircle className="w-4 h-4 text-emerald-400" />
                           </div>
-                          <div className="flex items-center gap-3 mt-0.5">
-                            <p className="text-xs text-slate-400">{q.quote_number}</p>
-                            <p className="text-xs text-slate-400">{format(new Date(q.created_date), "dd MMM yyyy", { locale: es })}</p>
-                            <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: sc.bg, color: sc.text }}>
-                              {q.status}
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap gap-1.5 mt-1.5">
-                            {(q.items || []).slice(0, 3).map((item, i) => (
-                              <span key={i} className="text-xs bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-md text-slate-500">
-                                {item.service_name || item.description}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold text-slate-900">{q.client_name}</p>
+                              {q.client_company && <span className="text-xs text-slate-400">· {q.client_company}</span>}
+                            </div>
+                            <div className="flex items-center gap-3 mt-0.5">
+                              <p className="text-xs text-slate-400">{q.quote_number}</p>
+                              <p className="text-xs text-slate-400">{format(new Date(q.created_date), "dd MMM yyyy", { locale: es })}</p>
+                              <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: sc.bg, color: sc.text }}>
+                                {q.status}
                               </span>
-                            ))}
-                            {(q.items || []).length > 3 && (
-                              <span className="text-xs text-slate-400">+{q.items.length - 3} más</span>
-                            )}
+                            </div>
+                            <div className="flex flex-wrap gap-1.5 mt-1.5">
+                              {(q.items || []).slice(0, 3).map((item, i) => (
+                                <span key={i} className="text-xs bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-md text-slate-500">
+                                  {item.service_name || item.description}
+                                </span>
+                              ))}
+                              {(q.items || []).length > 3 && (
+                                <span className="text-xs text-slate-400">+{q.items.length - 3} más</span>
+                              )}
+                            </div>
                           </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-sm font-bold text-slate-900">{formatCLP(q.total)}</p>
+                            {q.include_iva && <p className="text-xs text-slate-400">IVA incluido</p>}
+                          </div>
+                          <button onClick={() => setPdfQuote(q)} className="p-2 hover:bg-gray-100 rounded-lg shrink-0" title="Ver PDF">
+                            <Download className="w-4 h-4 text-slate-400" />
+                          </button>
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-sm font-bold text-slate-900">{formatCLP(q.total)}</p>
-                          {q.include_iva && <p className="text-xs text-slate-400">IVA incluido</p>}
-                        </div>
-                        <button onClick={() => setPdfQuote(q)} className="p-2 hover:bg-gray-100 rounded-lg shrink-0" title="Ver PDF">
-                          <Download className="w-4 h-4 text-slate-400" />
-                        </button>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )
+        ) : (
+          deleted.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center">
+              <Trash2 className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+              <p className="text-slate-400 text-sm">No hay cotizaciones rechazadas</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {deleted.filter(q => {
+                if (!search) return true;
+                return q.client_name?.toLowerCase().includes(search.toLowerCase()) ||
+                  q.client_company?.toLowerCase().includes(search.toLowerCase()) ||
+                  q.quote_number?.toLowerCase().includes(search.toLowerCase());
+              }).map(q => (
+                <div key={q.id} className="bg-white rounded-2xl border border-red-100 px-5 py-4 flex items-center gap-4 opacity-75">
+                  <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center shrink-0">
+                    <Trash2 className="w-4 h-4 text-red-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-slate-700">{q.client_name}</p>
+                      {q.client_company && <span className="text-xs text-slate-400">· {q.client_company}</span>}
+                    </div>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <p className="text-xs text-slate-400">{q.quote_number}</p>
+                      <p className="text-xs text-slate-400">{format(new Date(q.created_date), "dd MMM yyyy", { locale: es })}</p>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold text-slate-700">{formatCLP(q.total)}</p>
+                  </div>
+                  <button onClick={() => setPdfQuote(q)} className="p-2 hover:bg-gray-100 rounded-lg shrink-0" title="Ver PDF">
+                    <Download className="w-4 h-4 text-slate-400" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )
         )}
       </div>
     </div>
