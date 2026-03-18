@@ -52,11 +52,15 @@ export default function Layout({ children, currentPageName }) {
       <aside className="hidden md:flex flex-col w-64 min-h-screen bg-white border-r border-gray-100 fixed left-0 top-0 bottom-0 z-30">
         <div className="px-6 py-7 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-slate-900 rounded-xl flex items-center justify-center">
-              <Wifi className="w-5 h-5 text-white" />
-            </div>
+            {company?.logo_url ? (
+              <img src={company.logo_url} alt="Logo" className="w-9 h-9 object-contain rounded-xl" />
+            ) : (
+              <div className="w-9 h-9 bg-slate-900 rounded-xl flex items-center justify-center">
+                <Wifi className="w-5 h-5 text-white" />
+              </div>
+            )}
             <div>
-              <p className="text-sm font-700 text-slate-900 font-semibold leading-tight">SOLUCIONES  FML</p>
+              <p className="text-sm font-semibold text-slate-900 leading-tight">{company?.company_name || "SOLUCIONES FML"}</p>
               <p className="text-xs text-slate-400">Sistemas & Redes</p>
             </div>
           </div>
