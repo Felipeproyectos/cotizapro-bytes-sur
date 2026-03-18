@@ -147,11 +147,38 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
     const include_iva = form.payment_type === "Con IVA (19%)";
     const iva_amount = include_iva ? subtotal * IVA_RATE : 0;
     const payload = { ...form, subtotal, iva_amount, total: subtotal + iva_amount, include_iva };
+
+    let savedId = quote?.id;
     if (quote?.id) {
       await base44.entities.Quote.update(quote.id, payload);
     } else {
-      await base44.entities.Quote.create(payload);
+      const created = await base44.entities.Quote.create(payload);
+      savedId = created.id;
     }
+
+    // Si es mensual y se marca como Ejecutada, crear cobro recurrente si no existe
+    if (payload.billing_type === "Mensual" && payload.status === "Ejecutada") {
+      const existing = await base44.entities.RecurringCharge.filter({ quote_id: savedId, active: true });
+      if (existing.length === 0) {
+        const now = new Date();
+        const day = payload.billing_day || 5;
+        const nextDate = new Date(now.getFullYear(), now.getMonth(), day);
+        if (nextDate <= now) nextDate.setMonth(nextDate.getMonth() + 1);
+        const nextStr = nextDate.toISOString().split("T")[0];
+        await base44.entities.RecurringCharge.create({
+          quote_id: savedId,
+          client_name: payload.client_name,
+          client_company: payload.client_company || "",
+          title: payload.title || payload.quote_number,
+          amount: payload.total,
+          billing_day: day,
+          next_billing_date: nextStr,
+          status: "pendiente",
+          active: true,
+        });
+      }
+    }
+
     setSaving(false);
     onSave();
   };
