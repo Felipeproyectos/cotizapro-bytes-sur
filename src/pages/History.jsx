@@ -95,12 +95,18 @@ export default function History() {
             <h1 className="text-2xl font-bold text-slate-900">Historial de Trabajos</h1>
             <p className="text-sm text-slate-500 mt-1">Cotizaciones aceptadas y ejecutadas</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button onClick={() => setTab("activas")} className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${tab === "activas" ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"}`}>
               Ejecutadas / Aceptadas
             </button>
             <button onClick={() => setTab("eliminadas")} className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${tab === "eliminadas" ? "bg-red-500 text-white border-red-500" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"}`}>
               Rechazadas ({deleted.length})
+            </button>
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+            >
+              <FileDown className="w-4 h-4" /> Exportar CSV
             </button>
           </div>
         </div>
