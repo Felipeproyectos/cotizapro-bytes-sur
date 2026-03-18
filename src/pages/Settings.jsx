@@ -71,6 +71,36 @@ export default function Settings() {
         </div>
 
         <div className="space-y-5">
+          {/* Logo upload */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <div className="flex items-center gap-2 mb-5">
+              <ImageIcon className="w-4 h-4 text-slate-500" />
+              <h2 className="text-sm font-semibold text-slate-900">Logo de la Empresa</h2>
+            </div>
+            <div className="flex items-center gap-5">
+              <div className="w-24 h-24 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50">
+                {form.logo_url ? (
+                  <img src={form.logo_url} alt="Logo" className="w-full h-full object-contain p-1" />
+                ) : (
+                  <ImageIcon className="w-8 h-8 text-slate-300" />
+                )}
+              </div>
+              <div>
+                <label className="cursor-pointer flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors">
+                  <Upload className="w-4 h-4" />
+                  {uploadingLogo ? "Subiendo..." : "Subir Logo"}
+                  <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} disabled={uploadingLogo} />
+                </label>
+                {form.logo_url && (
+                  <button onClick={() => setField("logo_url", "")} className="mt-2 text-xs text-red-400 hover:text-red-600 block">
+                    Eliminar logo
+                  </button>
+                )}
+                <p className="text-xs text-slate-400 mt-2">PNG, JPG recomendado. Aparecerá en tus cotizaciones PDF.</p>
+              </div>
+            </div>
+          </div>
+
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <div className="flex items-center gap-2 mb-5">
               <Building2 className="w-4 h-4 text-slate-500" />
