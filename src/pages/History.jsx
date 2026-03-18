@@ -35,6 +35,37 @@ export default function History() {
 
   const formatCLP = (n) => `$${Math.round(n || 0).toLocaleString("es-CL")}`;
 
+  const handleExportCSV = () => {
+    const data = tab === "activas" ? filtered : deleted.filter(q => {
+      if (!search) return true;
+      return q.client_name?.toLowerCase().includes(search.toLowerCase()) ||
+        q.client_company?.toLowerCase().includes(search.toLowerCase()) ||
+        q.quote_number?.toLowerCase().includes(search.toLowerCase());
+    });
+
+    const headers = ["N° Cotización", "Cliente", "Empresa", "RUT", "Email", "Teléfono", "Estado", "Total", "Fecha"];
+    const rows = data.map(q => [
+      q.quote_number || "",
+      q.client_name || "",
+      q.client_company || "",
+      q.client_rut || "",
+      q.client_email || "",
+      q.client_phone || "",
+      q.status || "",
+      Math.round(q.total || 0),
+      format(new Date(q.created_date), "dd/MM/yyyy", { locale: es }),
+    ]);
+
+    const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(";")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `historial_cotizaciones_${format(new Date(), "yyyy-MM-dd")}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const filtered = quotes.filter(q => {
     if (!search) return true;
     return (
