@@ -99,6 +99,8 @@ export default function Dashboard() {
           </Link>
         </div>
 
+        <RecurringAlerts />
+
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatCard title="Total Cotizaciones" value={quotes.length} subtitle="Todas las cotizaciones" icon={FileText} color="bg-slate-900" />
