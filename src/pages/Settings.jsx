@@ -45,6 +45,15 @@ export default function Settings() {
 
   const setField = (f, v) => setForm(prev => ({ ...prev, [f]: v }));
 
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    setField("logo_url", file_url);
+    setUploadingLogo(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">

@@ -191,6 +191,9 @@ export default function Quotes() {
                     <button onClick={() => { setSelected(q); setView("form"); }} className="p-2 hover:bg-gray-100 rounded-lg" title="Editar">
                       <Pencil className="w-4 h-4 text-slate-400" />
                     </button>
+                    <button onClick={() => handleDuplicate(q)} className="p-2 hover:bg-blue-50 rounded-lg" title="Duplicar">
+                      <Copy className="w-4 h-4 text-blue-400" />
+                    </button>
                     <button onClick={() => handleDelete(q.id)} className="p-2 hover:bg-red-50 rounded-lg" title="Eliminar">
                       <Trash2 className="w-4 h-4 text-red-400" />
                     </button>
