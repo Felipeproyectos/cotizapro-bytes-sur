@@ -176,6 +176,7 @@ export default function History() {
                               <p className="text-sm font-semibold text-slate-900">{q.client_name}</p>
                               {q.client_company && <span className="text-xs text-slate-400">· {q.client_company}</span>}
                             </div>
+                            {q.title && <p className="text-xs font-medium text-slate-600 mt-0.5">{q.title}</p>}
                             <div className="flex items-center gap-3 mt-0.5">
                               <p className="text-xs text-slate-400">{q.quote_number}</p>
                               <p className="text-xs text-slate-400">{format(new Date(q.created_date), "dd MMM yyyy", { locale: es })}</p>

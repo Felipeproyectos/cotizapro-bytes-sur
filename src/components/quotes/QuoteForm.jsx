@@ -170,6 +170,15 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
       {/* Header */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
         <h2 className="text-sm font-semibold text-slate-900 mb-4">Datos de la Cotización</h2>
+        <div className="mb-4">
+          <label className="text-xs font-medium text-slate-500 mb-1.5 block">Título / Asunto <span className="text-slate-300">(opcional)</span></label>
+          <input
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+            value={form.title || ""}
+            onChange={e => setField("title", e.target.value)}
+            placeholder="Ej: Instalación eléctrica Don Pedro, Cámaras sucursal norte..."
+          />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="text-xs font-medium text-slate-500 mb-1.5 block">Nº Cotización</label>
