@@ -125,11 +125,16 @@ export default function Quotes() {
           </div>
           <div className="flex gap-2 flex-wrap">
             {["Todos", "Borrador", "Enviada", "Aceptada"].map(s => (
-        </div>
-
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <div className="w-6 h-6 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-3 py-2 rounded-xl text-xs font-medium border transition-colors ${
+                  statusFilter === s ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"
+                }`}
+              >
+                {s}
+              </button>
+            ))}
           </div>
         ) : filtered.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center">
