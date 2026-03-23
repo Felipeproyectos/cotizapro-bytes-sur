@@ -152,9 +152,13 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
   const handleSave = async () => {
     setSaving(true);
     const subtotal = form.items.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
+    const discount_amount = parseFloat(form.discount_amount) || 0;
+    const discount_percent = subtotal > 0 ? (discount_amount / subtotal) * 100 : 0;
+    const subtotal_after_discount = subtotal - discount_amount;
     const include_iva = form.payment_type === "Con IVA (19%)";
-    const iva_amount = include_iva ? subtotal * IVA_RATE : 0;
-    const payload = { ...form, subtotal, iva_amount, total: subtotal + iva_amount, include_iva };
+    const iva_amount = include_iva ? subtotal_after_discount * IVA_RATE : 0;
+    const total = subtotal_after_discount + iva_amount;
+    const payload = { ...form, subtotal, discount_amount, discount_percent, subtotal_after_discount, iva_amount, total, include_iva };
 
     let savedId = quote?.id;
     if (quote?.id) {
