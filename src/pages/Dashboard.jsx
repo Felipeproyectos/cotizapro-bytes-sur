@@ -45,9 +45,11 @@ export default function Dashboard() {
     });
   }, []);
 
-  const totalRevenue = quotes
-    .filter(q => q.status === "Ejecutada" || q.status === "Aceptada")
-    .reduce((sum, q) => sum + (q.total || 0), 0);
+  const executedQuotes = quotes.filter(q => (q.status === "Ejecutada" || q.status === "Aceptada") && q.billing_type !== "Mensual");
+  const monthlyQuotes = quotes.filter(q => (q.status === "Ejecutada" || q.status === "Aceptada") && q.billing_type === "Mensual");
+  
+  const totalRevenue = executedQuotes.reduce((sum, q) => sum + (q.total || 0), 0);
+  const monthlyRevenue = monthlyQuotes.reduce((sum, q) => sum + (q.total || 0), 0);
 
   const statusCounts = quotes.reduce((acc, q) => {
     acc[q.status] = (acc[q.status] || 0) + 1;
@@ -108,23 +110,9 @@ export default function Dashboard() {
           <StatCard title="Total Cotizaciones" value={quotes.length} subtitle="Todas las cotizaciones" icon={FileText} color="bg-slate-900" />
           <StatCard title="Ejecutadas" value={statusCounts["Ejecutada"] || 0} subtitle="Trabajos completados" icon={CheckCircle} color="bg-emerald-500" />
           <StatCard title="Pendientes" value={(statusCounts["Enviada"] || 0) + (statusCounts["Borrador"] || 0)} subtitle="En espera" icon={Clock} color="bg-blue-500" />
-          <StatCard title="Ingresos (Ejec.)" value={formatCLP(totalRevenue)} subtitle="Cotizaciones aceptadas/ejecutadas" icon={TrendingUp} color="bg-violet-500" />
+          <StatCard title="Ingresos (One-time)" value={formatCLP(totalRevenue)} subtitle="Proyectos ejecutados" icon={TrendingUp} color="bg-violet-500" />
+          <StatCard title="Ingresos (Mensual)" value={formatCLP(monthlyRevenue)} subtitle="Servicios recurrentes" icon={TrendingUp} color="bg-pink-500" />
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Bar chart */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
-            <h2 className="text-sm font-semibold text-slate-900 mb-4">Ingresos últimos 6 meses</h2>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={monthlyData} barSize={32}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v) => formatCLP(v)} labelStyle={{ color: "#0f172a", fontWeight: 600 }} contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12 }} />
-                <Bar dataKey="total" fill="#0f172a" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
 
           {/* Pie chart */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
