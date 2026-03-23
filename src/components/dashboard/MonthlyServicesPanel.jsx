@@ -9,8 +9,14 @@ export default function MonthlyServicesPanel() {
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
-    const data = await base44.entities.RecurringCharge.filter({ active: true });
-    setCharges(data);
+    const [data, quotes] = await Promise.all([
+      base44.entities.RecurringCharge.filter({ active: true }),
+      base44.entities.Quote.list("-created_date", 500),
+    ]);
+    const validQuoteIds = new Set(
+      quotes.filter(q => q.status === "Aceptada" || q.status === "Ejecutada").map(q => q.id)
+    );
+    setCharges(data.filter(c => validQuoteIds.has(c.quote_id)));
     setLoading(false);
   };
 
