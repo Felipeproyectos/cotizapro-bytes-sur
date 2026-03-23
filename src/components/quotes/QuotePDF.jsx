@@ -32,6 +32,8 @@ export default function QuotePDF({ quote, onClose }) {
   const isHonorarios = paymentType === "Boleta de Honorarios";
   const retencion = isHonorarios ? Math.round((quote.subtotal || 0) * 0.1075) : 0;
   const liquidoHonorarios = isHonorarios ? (quote.subtotal || 0) - retencion : 0;
+  const discount_amount = quote.discount_amount || 0;
+  const discount_percent = quote.discount_percent || 0;
 
   const handlePrint = () => {
     const html = `<!DOCTYPE html>
@@ -141,6 +143,7 @@ export default function QuotePDF({ quote, onClose }) {
   <div class="totals">
     <div class="totals-box">
       <div class="total-row"><span>Subtotal</span><span>$${Math.round(quote.subtotal || 0).toLocaleString("es-CL")}</span></div>
+      ${discount_amount > 0 ? `<div class="total-row"><span style="color:#059669">Descuento (${discount_percent.toFixed(1)}%)</span><span style="color:#059669">-$${Math.round(discount_amount).toLocaleString("es-CL")}</span></div>` : ""}
       ${paymentType === "Con IVA (19%)" ? `<div class="total-row"><span>IVA (19%)</span><span>$${Math.round(quote.iva_amount || 0).toLocaleString("es-CL")}</span></div>` : ""}
       ${isHonorarios ? `
         <div class="total-row"><span>Retención (10,75%)</span><span class="red">-$${Math.round(retencion).toLocaleString("es-CL")}</span></div>
@@ -305,6 +308,12 @@ ${quote.notes ? `
                   <span className="text-slate-500">Subtotal</span>
                   <span className="font-medium text-slate-900">{formatCLP(quote.subtotal)}</span>
                 </div>
+                {discount_amount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-emerald-600">Descuento ({discount_percent.toFixed(1)}%)</span>
+                    <span className="font-medium text-emerald-600">-{formatCLP(discount_amount)}</span>
+                  </div>
+                )}
                 {paymentType === "Con IVA (19%)" && (
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500">IVA (19%)</span>
