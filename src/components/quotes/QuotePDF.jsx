@@ -4,10 +4,6 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { X, Printer } from "lucide-react";
 
-const STATUS_LABELS = {
-  Borrador: "BORRADOR", Enviada: "ENVIADA", Aceptada: "ACEPTADA",
-  Rechazada: "RECHAZADA", Ejecutada: "EJECUTADA",
-};
 const STATUS_COLORS = {
   Borrador: "#94a3b8", Enviada: "#3b82f6", Aceptada: "#10b981",
   Rechazada: "#ef4444", Ejecutada: "#8b5cf6",
@@ -25,7 +21,6 @@ export default function QuotePDF({ quote, onClose }) {
   const formatCLP = (n) => `$${Math.round(n || 0).toLocaleString("es-CL")}`;
   const statusColor = STATUS_COLORS[quote.status] || "#94a3b8";
 
-  // Calcular variables necesarias
   const totalAbonos = (quote.abonos || []).reduce((s, a) => s + (a.monto || 0), 0);
   const saldoPendiente = (quote.total || 0) - totalAbonos;
   const paymentType = quote.payment_type || (quote.include_iva ? "Con IVA (19%)" : "Sin IVA");
@@ -34,6 +29,7 @@ export default function QuotePDF({ quote, onClose }) {
   const liquidoHonorarios = isHonorarios ? (quote.subtotal || 0) - retencion : 0;
   const discount_amount = quote.discount_amount || 0;
   const discount_percent = quote.discount_percent || 0;
+  const isMensual = quote.billing_type === "Mensual";
 
   const handlePrint = () => {
     const html = `<!DOCTYPE html>
@@ -51,7 +47,7 @@ export default function QuotePDF({ quote, onClose }) {
   .header-right .label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
   .header-right .number { font-size: 18px; font-weight: 700; color: white; }
   .header-right .date { font-size: 11px; color: #94a3b8; margin-top: 3px; }
-  .badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 999px; margin-top: 8px; background: ${statusColor}40 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: ${statusColor}; }
+  .mensual-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 999px; margin-top: 8px; background: #7c3aed33 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #a78bfa; }
   .section { padding: 18px 36px; border-bottom: 1px solid #f1f5f9; }
   .section-title { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
   .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; }
@@ -78,6 +74,7 @@ export default function QuotePDF({ quote, onClose }) {
   .red { color: #dc2626; }
   .green { color: #059669; }
   .payment-section { padding: 16px 36px; background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border-bottom: 1px solid #f1f5f9; }
+  .mensual-section { padding: 14px 36px; background: #f5f3ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border-bottom: 1px solid #ede9fe; }
   .notes { padding: 16px 36px; border-bottom: 1px solid #f1f5f9; }
   .notes p { font-size: 12px; color: #475569; line-height: 1.6; white-space: pre-line; }
   .footer { padding: 12px 36px; text-align: center; }
@@ -100,7 +97,7 @@ export default function QuotePDF({ quote, onClose }) {
     ${quote.title ? `<div style="color:#cbd5e1;font-size:12px;margin-top:3px;font-weight:500;">${quote.title}</div>` : ""}
     <div class="date">${format(new Date(quote.created_date), "dd 'de' MMMM, yyyy", { locale: es })}</div>
     ${quote.valid_until ? `<div class="date">Válida hasta: ${format(new Date(quote.valid_until), "dd MMM yyyy", { locale: es })}</div>` : ""}
-    
+    ${isMensual ? `<div class="mensual-badge">🔄 SERVICIO MENSUAL · Cobro día ${quote.billing_day || "—"} de cada mes</div>` : ""}
   </div>
 </div>
 
@@ -149,11 +146,21 @@ export default function QuotePDF({ quote, onClose }) {
         <div class="total-row"><span>Retención (10,75%)</span><span class="red">-$${Math.round(retencion).toLocaleString("es-CL")}</span></div>
         <div class="total-row"><span>Líquido a pagar</span><span>$${Math.round(liquidoHonorarios).toLocaleString("es-CL")}</span></div>
       ` : ""}
-      <div class="total-row final"><span>Total</span><span>$${Math.round(quote.total || 0).toLocaleString("es-CL")}</span></div>
+      <div class="total-row final"><span>Total${isMensual ? " mensual" : ""}</span><span>$${Math.round(quote.total || 0).toLocaleString("es-CL")}</span></div>
       ${paymentType === "Sin IVA" ? `<div class="total-note">* Precio no incluye IVA</div>` : ""}
     </div>
   </div>
 </div>
+
+${isMensual ? `
+<div class="mensual-section">
+  <div class="section-title" style="color:#7c3aed;">Condiciones de Servicio Mensual</div>
+  <div class="grid2">
+    <div><div class="field-label">Tipo de cobro</div><div class="field-value" style="color:#7c3aed;font-weight:700;">🔄 Mensual recurrente</div></div>
+    <div><div class="field-label">Día de cobro</div><div class="field-value">Día ${quote.billing_day || "—"} de cada mes</div></div>
+    <div><div class="field-label">Monto mensual</div><div class="field-value">$${Math.round(quote.total || 0).toLocaleString("es-CL")}</div></div>
+  </div>
+</div>` : ""}
 
 ${(quote.abonos || []).length > 0 ? `
 <div class="section">
@@ -214,12 +221,13 @@ ${quote.notes ? `
       <div className="w-full max-w-3xl">
         {/* Toolbar */}
         <div className="flex items-center justify-between mb-4">
-          <p className="text-white text-sm font-medium">Vista previa — {paymentType}</p>
+          <p className="text-white text-sm font-medium">
+            Vista previa — {paymentType}
+            {isMensual && <span className="ml-2 bg-violet-500/30 text-violet-200 text-xs px-2 py-0.5 rounded-full">🔄 Mensual · Día {quote.billing_day}</span>}
+          </p>
           <div className="flex gap-3">
-            <button
-              onClick={handlePrint}
-              className="flex items-center gap-2 bg-white text-slate-900 px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-100"
-            >
+            <button onClick={handlePrint}
+              className="flex items-center gap-2 bg-white text-slate-900 px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-100">
               <Printer className="w-4 h-4" /> Imprimir / Guardar PDF
             </button>
             <button onClick={onClose} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-white">
@@ -256,10 +264,34 @@ ${quote.notes ? `
                 {quote.valid_until && (
                   <p className="text-slate-400 text-xs">Válida hasta: {format(new Date(quote.valid_until), "dd MMM yyyy", { locale: es })}</p>
                 )}
-                
+                {isMensual && (
+                  <div className="mt-2 inline-block bg-violet-500/20 text-violet-300 text-xs font-bold px-3 py-1 rounded-full">
+                    🔄 SERVICIO MENSUAL · Cobro día {quote.billing_day || "—"}
+                  </div>
+                )}
               </div>
             </div>
           </div>
+
+          {/* Mensual info banner */}
+          {isMensual && (
+            <div className="px-10 py-4 border-b border-violet-100" style={{ background: "#f5f3ff" }}>
+              <div className="flex items-center gap-6 text-sm">
+                <div>
+                  <p className="text-xs text-violet-400 font-medium uppercase tracking-wider">Tipo de servicio</p>
+                  <p className="font-bold text-violet-700">🔄 Mensual recurrente</p>
+                </div>
+                <div>
+                  <p className="text-xs text-violet-400 font-medium uppercase tracking-wider">Día de cobro</p>
+                  <p className="font-bold text-violet-700">Día {quote.billing_day || "—"} de cada mes</p>
+                </div>
+                <div>
+                  <p className="text-xs text-violet-400 font-medium uppercase tracking-wider">Monto mensual</p>
+                  <p className="font-bold text-violet-700">{formatCLP(quote.total)}</p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Client Info */}
           <div className="px-10 py-6 border-b border-gray-100">
@@ -333,7 +365,7 @@ ${quote.notes ? `
                   </>
                 )}
                 <div className="flex justify-between pt-2 border-t border-gray-200">
-                  <span className="font-bold text-slate-900">Total</span>
+                  <span className="font-bold text-slate-900">Total{isMensual ? " mensual" : ""}</span>
                   <span className="font-bold text-slate-900">{formatCLP(quote.total)}</span>
                 </div>
                 {paymentType === "Sin IVA" && (
@@ -382,30 +414,12 @@ ${quote.notes ? `
           <div className="px-10 py-5 border-t border-gray-100" style={{ background: "#f8fafc" }}>
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Datos de Pago</p>
             <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 text-sm">
-              <div>
-                <p className="text-xs text-slate-400">Forma de pago</p>
-                <p className="font-medium text-slate-800">Efectivo, Transferencia o Boleta de Honorarios</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Titular</p>
-                <p className="font-medium text-slate-800">Felipe Aguilar Monsalve</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">RUT</p>
-                <p className="font-medium text-slate-800">18.460.276-8</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Banco</p>
-                <p className="font-medium text-slate-800">Banco de Chile · Cuenta Corriente</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">N° de Cuenta</p>
-                <p className="font-medium text-slate-800">00-804-03035-09</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Email de confirmación</p>
-                <p className="font-medium text-slate-800">felipemonsalveaguilar@gmail.com</p>
-              </div>
+              <div><p className="text-xs text-slate-400">Forma de pago</p><p className="font-medium text-slate-800">Efectivo, Transferencia o Boleta de Honorarios</p></div>
+              <div><p className="text-xs text-slate-400">Titular</p><p className="font-medium text-slate-800">Felipe Aguilar Monsalve</p></div>
+              <div><p className="text-xs text-slate-400">RUT</p><p className="font-medium text-slate-800">18.460.276-8</p></div>
+              <div><p className="text-xs text-slate-400">Banco</p><p className="font-medium text-slate-800">Banco de Chile · Cuenta Corriente</p></div>
+              <div><p className="text-xs text-slate-400">N° de Cuenta</p><p className="font-medium text-slate-800">00-804-03035-09</p></div>
+              <div><p className="text-xs text-slate-400">Email de confirmación</p><p className="font-medium text-slate-800">felipemonsalveaguilar@gmail.com</p></div>
             </div>
           </div>
 
