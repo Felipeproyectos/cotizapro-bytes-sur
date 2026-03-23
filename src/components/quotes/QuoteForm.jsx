@@ -34,6 +34,7 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
     notes: "",
     valid_until: format(addDays(new Date(), 30), "yyyy-MM-dd"),
     abonos: [],
+    discount_amount: 0,
   });
   const [saving, setSaving] = useState(false);
 
@@ -101,20 +102,27 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
 
   const recalc = (f) => {
     const subtotal = f.items.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
+    const discount_amount = parseFloat(f.discount_amount) || 0;
+    const discount_percent = subtotal > 0 ? (discount_amount / subtotal) * 100 : 0;
+    const subtotal_after_discount = subtotal - discount_amount;
     const include_iva = f.payment_type === "Con IVA (19%)";
-    const iva_amount = include_iva ? subtotal * IVA_RATE : 0;
-    const total = subtotal + iva_amount;
-    setForm({ ...f, subtotal, iva_amount, total, include_iva });
+    const iva_amount = include_iva ? subtotal_after_discount * IVA_RATE : 0;
+    const total = subtotal_after_discount + iva_amount;
+    setForm({ ...f, subtotal, discount_amount, discount_percent, subtotal_after_discount, iva_amount, total, include_iva });
   };
 
   const setField = (field, val) => {
     const updated = { ...form, [field]: val };
     if (field === "payment_type") {
-      const subtotal = form.subtotal || 0;
+      const subtotal_after_discount = (form.subtotal_after_discount ?? form.subtotal) || 0;
       const include_iva = val === "Con IVA (19%)";
       updated.include_iva = include_iva;
-      updated.iva_amount = include_iva ? subtotal * IVA_RATE : 0;
-      updated.total = subtotal + updated.iva_amount;
+      updated.iva_amount = include_iva ? subtotal_after_discount * IVA_RATE : 0;
+      updated.total = subtotal_after_discount + updated.iva_amount;
+    }
+    if (field === "discount_amount") {
+      recalc(updated);
+      return;
     }
     setForm(updated);
   };
@@ -186,9 +194,11 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
   const formatCLP = (n) => `$${Math.round(n || 0).toLocaleString("es-CL")}`;
 
   const subtotal = form.items.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
+  const discount_amount = parseFloat(form.discount_amount) || 0;
+  const subtotal_after_discount = subtotal - discount_amount;
   const include_iva = form.payment_type === "Con IVA (19%)";
-  const iva_amount = include_iva ? subtotal * IVA_RATE : 0;
-  const total = subtotal + iva_amount;
+  const iva_amount = include_iva ? subtotal_after_discount * IVA_RATE : 0;
+  const total = subtotal_after_discount + iva_amount;
   const totalAbonos = (form.abonos || []).reduce((s, a) => s + (a.monto || 0), 0);
   const saldoPendiente = total - totalAbonos;
 
@@ -403,12 +413,48 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
           ))}
         </div>
 
+        {/* Descuento */}
+        <div className="mt-5 border border-dashed border-gray-200 rounded-xl p-4 bg-gray-50/50">
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <label className="text-xs font-medium text-slate-500 mb-1 block">Descuento (en pesos CLP)</label>
+              <input
+                type="number"
+                min="0"
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                value={form.discount_amount || ""}
+                placeholder="0"
+                onChange={e => setField("discount_amount", e.target.value)}
+              />
+            </div>
+            {(form.discount_amount > 0) && (
+              <div className="text-right shrink-0">
+                <p className="text-xs text-slate-400">Equivale a</p>
+                <p className="text-lg font-bold text-emerald-600">{(form.discount_percent || 0).toFixed(1)}%</p>
+                <p className="text-xs text-slate-400">de descuento</p>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Totals */}
         <div className="mt-6 flex flex-col items-end gap-2">
           <div className="flex items-center gap-4 text-sm">
             <span className="text-slate-500">Subtotal</span>
             <span className="font-semibold text-slate-900 w-32 text-right">{formatCLP(subtotal)}</span>
           </div>
+          {(form.discount_amount > 0) && (
+            <div className="flex items-center gap-4 text-sm">
+              <span className="text-emerald-600">Descuento ({(form.discount_percent || 0).toFixed(1)}%)</span>
+              <span className="font-semibold text-emerald-600 w-32 text-right">-{formatCLP(form.discount_amount)}</span>
+            </div>
+          )}
+          {(form.discount_amount > 0) && (
+            <div className="flex items-center gap-4 text-sm">
+              <span className="text-slate-500">Subtotal c/descuento</span>
+              <span className="font-semibold text-slate-900 w-32 text-right">{formatCLP((form.subtotal_after_discount ?? subtotal))}</span>
+            </div>
+          )}
           {include_iva && (
             <div className="flex items-center gap-4 text-sm">
               <span className="text-slate-500">IVA (19%)</span>
