@@ -136,6 +136,12 @@ export default function Quotes() {
               </button>
             ))}
           </div>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="w-6 h-6 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+          </div>
         ) : filtered.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center">
             <FileText className="w-10 h-10 text-slate-200 mx-auto mb-3" />
