@@ -56,8 +56,12 @@ export default function Quotes() {
     load();
   };
 
+  const ACTIVE_STATUSES = ["Borrador", "Enviada", "Aceptada"];
+
   const filtered = quotes.filter(q => {
-    const matchStatus = statusFilter === "Todos" || q.status === statusFilter;
+    const matchStatus = statusFilter === "Todos"
+      ? ACTIVE_STATUSES.includes(q.status)
+      : q.status === statusFilter;
     const matchSearch = !search ||
       q.client_name?.toLowerCase().includes(search.toLowerCase()) ||
       q.client_company?.toLowerCase().includes(search.toLowerCase()) ||
@@ -120,18 +124,7 @@ export default function Quotes() {
             />
           </div>
           <div className="flex gap-2 flex-wrap">
-            {["Todos", "Borrador", "Enviada", "Aceptada", "Rechazada", "Ejecutada"].map(s => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`px-3 py-2 rounded-xl text-xs font-medium border transition-colors ${
-                  statusFilter === s ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
+            {["Todos", "Borrador", "Enviada", "Aceptada"].map(s => (
         </div>
 
         {loading ? (
@@ -172,6 +165,9 @@ export default function Quotes() {
                   <div className="text-right shrink-0">
                     <p className="text-sm font-bold text-slate-900">{formatCLP(q.total)}</p>
                     <p className="text-xs text-slate-400">{(q.items || []).length} ítem(s)</p>
+                    {q.discount_amount > 0 && (
+                      <p className="text-xs text-emerald-600">Desc: -{formatCLP(q.discount_amount)} ({(q.discount_percent || 0).toFixed(1)}%)</p>
+                    )}
                     {(q.abonos || []).length > 0 && (() => {
                       const totalAbonos = q.abonos.reduce((s, a) => s + (a.monto || 0), 0);
                       const saldo = (q.total || 0) - totalAbonos;
