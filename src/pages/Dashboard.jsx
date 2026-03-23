@@ -106,7 +106,7 @@ export default function Dashboard() {
         <MonthlyServicesPanel />
 
         {/* Stats */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <StatCard title="Total Cotizaciones" value={quotes.length} subtitle="Todas las cotizaciones" icon={FileText} color="bg-slate-900" />
           <StatCard title="Ejecutadas" value={statusCounts["Ejecutada"] || 0} subtitle="Trabajos completados" icon={CheckCircle} color="bg-emerald-500" />
           <StatCard title="Pendientes" value={(statusCounts["Enviada"] || 0) + (statusCounts["Borrador"] || 0)} subtitle="En espera" icon={Clock} color="bg-blue-500" />
@@ -131,6 +131,32 @@ export default function Dashboard() {
 
           {/* Pie chart */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <h2 className="text-sm font-semibold text-slate-900 mb-4">Estado de cotizaciones</h2>
+            <ResponsiveContainer width="100%" height={160}>
+              <PieChart>
+                <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
+                  {pieData.map((entry, i) => (
+                    <Cell key={i} fill={STATUS_COLORS[entry.name] || CHART_COLORS[i % CHART_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v, n) => [v, n]} contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12 }} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="space-y-2 mt-2">
+              {pieData.map((entry, i) => (
+                <div key={i} className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: STATUS_COLORS[entry.name] || CHART_COLORS[i] }} />
+                    <span className="text-slate-600">{entry.name}</span>
+                  </div>
+                  <span className="font-medium text-slate-900">{entry.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Recent quotes */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-slate-900">Cotizaciones recientes</h2>
