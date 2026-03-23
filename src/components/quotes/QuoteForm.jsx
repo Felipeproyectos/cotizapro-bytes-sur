@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Trash2, ChevronDown, UserSearch } from "lucide-react";
+import { Plus, Trash2, UserSearch } from "lucide-react";
 import { addDays, format } from "date-fns";
 
 const IVA_RATE = 0.19;
@@ -35,6 +35,11 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
     valid_until: format(addDays(new Date(), 30), "yyyy-MM-dd"),
     abonos: [],
     discount_amount: 0,
+    discount_percent: 0,
+    subtotal: 0,
+    subtotal_after_discount: 0,
+    iva_amount: 0,
+    total: 0,
   });
   const [saving, setSaving] = useState(false);
 
@@ -82,6 +87,17 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
     setClientSearch("");
   };
 
+  const recalc = (f) => {
+    const subtotal = f.items.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
+    const discount_amount = parseFloat(f.discount_amount) || 0;
+    const discount_percent = subtotal > 0 ? (discount_amount / subtotal) * 100 : 0;
+    const subtotal_after_discount = subtotal - discount_amount;
+    const include_iva = f.payment_type === "Con IVA (19%)";
+    const iva_amount = include_iva ? subtotal_after_discount * IVA_RATE : 0;
+    const total = subtotal_after_discount + iva_amount;
+    setForm({ ...f, subtotal, discount_amount, discount_percent, subtotal_after_discount, iva_amount, total, include_iva });
+  };
+
   const updateItem = (idx, field, val) => {
     const items = [...form.items];
     items[idx] = { ...items[idx], [field]: val };
@@ -100,27 +116,9 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
     recalc({ ...form, items });
   };
 
-  const recalc = (f) => {
-    const subtotal = f.items.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
-    const discount_amount = parseFloat(f.discount_amount) || 0;
-    const discount_percent = subtotal > 0 ? (discount_amount / subtotal) * 100 : 0;
-    const subtotal_after_discount = subtotal - discount_amount;
-    const include_iva = f.payment_type === "Con IVA (19%)";
-    const iva_amount = include_iva ? subtotal_after_discount * IVA_RATE : 0;
-    const total = subtotal_after_discount + iva_amount;
-    setForm({ ...f, subtotal, discount_amount, discount_percent, subtotal_after_discount, iva_amount, total, include_iva });
-  };
-
   const setField = (field, val) => {
     const updated = { ...form, [field]: val };
-    if (field === "payment_type") {
-      const subtotal_after_discount = (form.subtotal_after_discount ?? form.subtotal) || 0;
-      const include_iva = val === "Con IVA (19%)";
-      updated.include_iva = include_iva;
-      updated.iva_amount = include_iva ? subtotal_after_discount * IVA_RATE : 0;
-      updated.total = subtotal_after_discount + updated.iva_amount;
-    }
-    if (field === "discount_amount") {
+    if (field === "payment_type" || field === "discount_amount") {
       recalc(updated);
       return;
     }
@@ -133,7 +131,6 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
     recalc({ ...form, items });
   };
 
-  // Abonos
   const addAbono = () => {
     setForm(f => ({
       ...f,
@@ -151,6 +148,7 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
 
   const handleSave = async () => {
     setSaving(true);
+
     const subtotal = form.items.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
     const discount_amount = parseFloat(form.discount_amount) || 0;
     const discount_percent = subtotal > 0 ? (discount_amount / subtotal) * 100 : 0;
@@ -175,7 +173,6 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
         const day = payload.billing_day || 5;
         const nextDate = new Date(now.getFullYear(), now.getMonth(), day);
         if (nextDate <= now) nextDate.setMonth(nextDate.getMonth() + 1);
-        const nextStr = nextDate.toISOString().split("T")[0];
         await base44.entities.RecurringCharge.create({
           quote_id: savedId,
           client_name: payload.client_name,
@@ -183,7 +180,7 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
           title: payload.title || payload.quote_number,
           amount: payload.total,
           billing_day: day,
-          next_billing_date: nextStr,
+          next_billing_date: nextDate.toISOString().split("T")[0],
           status: "pendiente",
           active: true,
         });
@@ -196,15 +193,16 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
 
   const formatCLP = (n) => `$${Math.round(n || 0).toLocaleString("es-CL")}`;
 
-  const subtotal = form.items.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
-  const discount_amount = parseFloat(form.discount_amount) || 0;
-  const subtotal_after_discount = subtotal - discount_amount;
+  // Derived display values (always from recalc'd form)
+  const subtotal = form.subtotal || 0;
+  const discount_amount = form.discount_amount || 0;
+  const discount_percent = form.discount_percent || 0;
+  const subtotal_after_discount = form.subtotal_after_discount || 0;
   const include_iva = form.payment_type === "Con IVA (19%)";
-  const iva_amount = include_iva ? subtotal_after_discount * IVA_RATE : 0;
-  const total = subtotal_after_discount + iva_amount;
+  const iva_amount = form.iva_amount || 0;
+  const total = form.total || 0;
   const totalAbonos = (form.abonos || []).reduce((s, a) => s + (a.monto || 0), 0);
   const saldoPendiente = total - totalAbonos;
-
   const showAbonos = ["Enviada", "Aceptada", "Ejecutada"].includes(form.status);
 
   return (
@@ -240,21 +238,14 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
               value={form.valid_until} onChange={e => setField("valid_until", e.target.value)} />
           </div>
         </div>
-        {/* Tipo de cobro recurrente */}
+        {/* Tipo de cobro */}
         <div className="mt-4">
           <label className="text-xs font-medium text-slate-500 mb-2 block">Tipo de cobro</label>
           <div className="flex gap-3">
             {["Único", "Mensual"].map(opt => (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => setField("billing_type", opt)}
+              <button key={opt} type="button" onClick={() => setField("billing_type", opt)}
                 className={`px-4 py-2 rounded-xl text-xs font-medium border transition-colors ${
-                  form.billing_type === opt
-                    ? "bg-slate-900 text-white border-slate-900"
-                    : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"
-                }`}
-              >
+                  form.billing_type === opt ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"}`}>
                 {opt === "Mensual" ? "🔄 Mensual" : "1️⃣ Único"}
               </button>
             ))}
@@ -262,34 +253,21 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
           {form.billing_type === "Mensual" && (
             <div className="mt-3 flex items-center gap-3">
               <label className="text-xs font-medium text-slate-500 whitespace-nowrap">Día de cobro (cada mes):</label>
-              <input
-                type="number"
-                min="1"
-                max="28"
+              <input type="number" min="1" max="28"
                 className="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                value={form.billing_day || 5}
-                onChange={e => setField("billing_day", parseInt(e.target.value))}
-              />
+                value={form.billing_day || 5} onChange={e => setField("billing_day", parseInt(e.target.value))} />
               <span className="text-xs text-slate-400">de cada mes</span>
             </div>
           )}
         </div>
-
         {/* Tipo de documento */}
         <div className="mt-4">
           <label className="text-xs font-medium text-slate-500 mb-2 block">Tipo de documento / impuesto</label>
           <div className="flex gap-3 flex-wrap">
             {["Sin IVA", "Con IVA (19%)", "Boleta de Honorarios"].map(opt => (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => setField("payment_type", opt)}
+              <button key={opt} type="button" onClick={() => setField("payment_type", opt)}
                 className={`px-4 py-2 rounded-xl text-xs font-medium border transition-colors ${
-                  form.payment_type === opt
-                    ? "bg-slate-900 text-white border-slate-900"
-                    : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"
-                }`}
-              >
+                  form.payment_type === opt ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"}`}>
                 {opt}
               </button>
             ))}
@@ -305,35 +283,22 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-slate-900">Datos del Cliente</h2>
           <div className="relative">
-            <button
-              type="button"
-              onClick={() => setShowClientDropdown(!showClientDropdown)}
-              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50"
-            >
+            <button type="button" onClick={() => setShowClientDropdown(!showClientDropdown)}
+              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50">
               <UserSearch className="w-3.5 h-3.5" /> Autocompletar
             </button>
             {showClientDropdown && (
               <div className="absolute right-0 top-9 z-20 bg-white border border-gray-200 rounded-xl shadow-lg w-72">
                 <div className="p-2 border-b border-gray-100">
-                  <input
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none"
-                    placeholder="Buscar cliente..."
-                    value={clientSearch}
-                    onChange={e => setClientSearch(e.target.value)}
-                    autoFocus
-                  />
+                  <input className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none"
+                    placeholder="Buscar cliente..." value={clientSearch}
+                    onChange={e => setClientSearch(e.target.value)} autoFocus />
                 </div>
                 <div className="max-h-48 overflow-y-auto py-1">
-                  {filteredClients.length === 0 && (
-                    <p className="text-xs text-slate-400 px-4 py-3">No hay clientes previos</p>
-                  )}
+                  {filteredClients.length === 0 && <p className="text-xs text-slate-400 px-4 py-3">No hay clientes previos</p>}
                   {filteredClients.map((c, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => fillFromClient(c)}
-                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm"
-                    >
+                    <button key={i} type="button" onClick={() => fillFromClient(c)}
+                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm">
                       <p className="font-medium text-slate-900">{c.client_name}</p>
                       {c.client_company && <p className="text-xs text-slate-400">{c.client_company}</p>}
                       {c.client_rut && <p className="text-xs text-slate-300">{c.client_rut}</p>}
@@ -376,11 +341,8 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
               <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
                 <div className="md:col-span-4">
                   <label className="text-xs text-slate-400 mb-1 block">Servicio</label>
-                  <select
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none"
-                    value={item.service_type_id || ""}
-                    onChange={e => updateItem(idx, "service_type_id", e.target.value)}
-                  >
+                  <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none"
+                    value={item.service_type_id || ""} onChange={e => updateItem(idx, "service_type_id", e.target.value)}>
                     <option value="">-- Seleccionar --</option>
                     {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                   </select>
@@ -421,19 +383,15 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
           <div className="flex items-center gap-4">
             <div className="flex-1">
               <label className="text-xs font-medium text-slate-500 mb-1 block">Descuento (en pesos CLP)</label>
-              <input
-                type="number"
-                min="0"
+              <input type="number" min="0"
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                value={form.discount_amount || ""}
-                placeholder="0"
-                onChange={e => setField("discount_amount", e.target.value)}
-              />
+                value={form.discount_amount || ""} placeholder="0"
+                onChange={e => setField("discount_amount", e.target.value)} />
             </div>
-            {(form.discount_amount > 0) && (
+            {discount_amount > 0 && (
               <div className="text-right shrink-0">
                 <p className="text-xs text-slate-400">Equivale a</p>
-                <p className="text-lg font-bold text-emerald-600">{(form.discount_percent || 0).toFixed(1)}%</p>
+                <p className="text-lg font-bold text-emerald-600">{discount_percent.toFixed(1)}%</p>
                 <p className="text-xs text-slate-400">de descuento</p>
               </div>
             )}
@@ -446,16 +404,16 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
             <span className="text-slate-500">Subtotal</span>
             <span className="font-semibold text-slate-900 w-32 text-right">{formatCLP(subtotal)}</span>
           </div>
-          {(form.discount_amount > 0) && (
+          {discount_amount > 0 && (
             <div className="flex items-center gap-4 text-sm">
-              <span className="text-emerald-600">Descuento ({(form.discount_percent || 0).toFixed(1)}%)</span>
-              <span className="font-semibold text-emerald-600 w-32 text-right">-{formatCLP(form.discount_amount)}</span>
+              <span className="text-emerald-600">Descuento ({discount_percent.toFixed(1)}%)</span>
+              <span className="font-semibold text-emerald-600 w-32 text-right">-{formatCLP(discount_amount)}</span>
             </div>
           )}
-          {(form.discount_amount > 0) && (
+          {discount_amount > 0 && (
             <div className="flex items-center gap-4 text-sm">
               <span className="text-slate-500">Subtotal c/descuento</span>
-              <span className="font-semibold text-slate-900 w-32 text-right">{formatCLP((form.subtotal_after_discount ?? subtotal))}</span>
+              <span className="font-semibold text-slate-900 w-32 text-right">{formatCLP(subtotal_after_discount)}</span>
             </div>
           )}
           {include_iva && (
@@ -468,11 +426,11 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
             <>
               <div className="flex items-center gap-4 text-sm">
                 <span className="text-slate-500">Retención (10,75%)</span>
-                <span className="font-semibold text-red-600 w-32 text-right">-{formatCLP(subtotal * 0.1075)}</span>
+                <span className="font-semibold text-red-600 w-32 text-right">-{formatCLP(subtotal_after_discount * 0.1075)}</span>
               </div>
               <div className="flex items-center gap-4 text-sm">
                 <span className="text-slate-500">Líquido a pagar</span>
-                <span className="font-semibold text-slate-900 w-32 text-right">{formatCLP(subtotal * (1 - 0.1075))}</span>
+                <span className="font-semibold text-slate-900 w-32 text-right">{formatCLP(subtotal_after_discount * (1 - 0.1075))}</span>
               </div>
             </>
           )}
@@ -544,11 +502,8 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
         <button onClick={onCancel} className="px-5 py-2.5 text-sm text-slate-500 border border-gray-200 rounded-xl hover:bg-gray-50">
           Cancelar
         </button>
-        <button
-          onClick={handleSave}
-          disabled={saving || !form.client_name}
-          className="px-5 py-2.5 text-sm bg-slate-900 text-white rounded-xl hover:bg-slate-800 disabled:opacity-50"
-        >
+        <button onClick={handleSave} disabled={saving || !form.client_name}
+          className="px-5 py-2.5 text-sm bg-slate-900 text-white rounded-xl hover:bg-slate-800 disabled:opacity-50">
           {saving ? "Guardando..." : quote?.id ? "Actualizar" : "Crear Cotización"}
         </button>
       </div>
