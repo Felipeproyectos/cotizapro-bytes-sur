@@ -193,14 +193,14 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
 
   const formatCLP = (n) => `$${Math.round(n || 0).toLocaleString("es-CL")}`;
 
-  // Derived display values (always from recalc'd form)
-  const subtotal = form.subtotal || 0;
-  const discount_amount = form.discount_amount || 0;
-  const discount_percent = form.discount_percent || 0;
-  const subtotal_after_discount = form.subtotal_after_discount || 0;
+  // Derived display values — computed live, never from stale form.total
+  const subtotal = form.items.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
+  const discount_amount = parseFloat(form.discount_amount) || 0;
+  const discount_percent = subtotal > 0 ? (discount_amount / subtotal) * 100 : 0;
+  const subtotal_after_discount = subtotal - discount_amount;
   const include_iva = form.payment_type === "Con IVA (19%)";
-  const iva_amount = form.iva_amount || 0;
-  const total = form.total || 0;
+  const iva_amount = include_iva ? subtotal_after_discount * IVA_RATE : 0;
+  const total = subtotal_after_discount + iva_amount;
   const totalAbonos = (form.abonos || []).reduce((s, a) => s + (a.monto || 0), 0);
   const saldoPendiente = total - totalAbonos;
   const showAbonos = ["Enviada", "Aceptada", "Ejecutada"].includes(form.status);
