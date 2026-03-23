@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { FileText, TrendingUp, CheckCircle, Clock, Plus, ArrowUpRight } from "lucide-react";
 import RecurringAlerts from "../components/dashboard/RecurringAlerts";
+import MonthlyServicesPanel from "../components/dashboard/MonthlyServicesPanel";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
@@ -100,6 +101,7 @@ export default function Dashboard() {
         </div>
 
         <RecurringAlerts />
+        <MonthlyServicesPanel />
 
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
