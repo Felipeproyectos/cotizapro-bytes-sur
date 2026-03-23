@@ -114,34 +114,23 @@ export default function Dashboard() {
           <StatCard title="Ingresos (Mensual)" value={formatCLP(monthlyRevenue)} subtitle="Servicios recurrentes" icon={TrendingUp} color="bg-pink-500" />
         </div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Bar chart */}
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6">
+            <h2 className="text-sm font-semibold text-slate-900 mb-4">Ingresos últimos 6 meses</h2>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={monthlyData} barSize={32}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+                <Tooltip formatter={(v) => formatCLP(v)} labelStyle={{ color: "#0f172a", fontWeight: 600 }} contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12 }} />
+                <Bar dataKey="total" fill="#0f172a" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
           {/* Pie chart */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h2 className="text-sm font-semibold text-slate-900 mb-4">Estado de cotizaciones</h2>
-            <ResponsiveContainer width="100%" height={160}>
-              <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
-                  {pieData.map((entry, i) => (
-                    <Cell key={i} fill={STATUS_COLORS[entry.name] || CHART_COLORS[i % CHART_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(v, n) => [v, n]} contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 12 }} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="space-y-2 mt-2">
-              {pieData.map((entry, i) => (
-                <div key={i} className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: STATUS_COLORS[entry.name] || CHART_COLORS[i] }} />
-                    <span className="text-slate-600">{entry.name}</span>
-                  </div>
-                  <span className="font-medium text-slate-900">{entry.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Recent quotes */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-slate-900">Cotizaciones recientes</h2>
