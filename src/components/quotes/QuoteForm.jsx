@@ -118,7 +118,7 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
 
   const setField = (field, val) => {
     const updated = { ...form, [field]: val };
-    if (field === "payment_type" || field === "discount_amount") {
+    if (field === "payment_type") {
       recalc(updated);
       return;
     }
