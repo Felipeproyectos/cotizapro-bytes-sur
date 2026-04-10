@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { FileText, TrendingUp, CheckCircle, Clock, Plus, ArrowUpRight } from "lucide-react";
+import { FileText, TrendingUp, CheckCircle, Clock, Plus, ArrowUpRight, MapPin, Phone, Mail, Globe, Building2 } from "lucide-react";
 import RecurringAlerts from "../components/dashboard/RecurringAlerts";
 import MonthlyServicesPanel from "../components/dashboard/MonthlyServicesPanel";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
@@ -36,11 +36,16 @@ function StatCard({ title, value, subtitle, icon: Icon, color }) {
 
 export default function Dashboard() {
   const [quotes, setQuotes] = useState([]);
+  const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    base44.entities.Quote.list("-created_date", 200).then(data => {
-      setQuotes(data);
+    Promise.all([
+      base44.entities.Quote.list("-created_date", 200),
+      base44.entities.CompanySettings.list()
+    ]).then(([quotesData, companyData]) => {
+      setQuotes(quotesData);
+      if (companyData && companyData.length > 0) setCompany(companyData[0]);
       setLoading(false);
     });
   }, []);
@@ -88,18 +93,74 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50 p-6 md:p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-            <p className="text-sm text-slate-500 mt-1">Resumen de tu negocio</p>
+
+        {/* Company Hero Card */}
+        <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-8 mb-8 overflow-hidden">
+          {/* Decorative circles */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-violet-500/10 rounded-full translate-y-1/2 -translate-x-1/4" />
+
+          <div className="relative flex flex-col md:flex-row md:items-center gap-6">
+            {/* Logo */}
+            <div className="flex-shrink-0">
+              {company?.logo_url ? (
+                <div className="w-24 h-24 rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl bg-white">
+                  <img src={company.logo_url} alt="Logo" className="w-full h-full object-contain p-1" />
+                </div>
+              ) : (
+                <div className="w-24 h-24 rounded-2xl bg-white/10 border-2 border-white/20 flex items-center justify-center shadow-2xl">
+                  <Building2 className="w-10 h-10 text-white/60" />
+                </div>
+              )}
+            </div>
+
+            {/* Company Info */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">
+                {company?.company_name || "Mi Empresa"}
+              </h1>
+              {company?.rut && (
+                <p className="text-slate-400 text-sm mt-1 font-mono">RUT: {company.rut}</p>
+              )}
+              <div className="flex flex-wrap gap-x-5 gap-y-2 mt-3">
+                {company?.address && (
+                  <span className="flex items-center gap-1.5 text-slate-300 text-xs">
+                    <MapPin className="w-3.5 h-3.5 text-blue-400" />
+                    {company.address}
+                  </span>
+                )}
+                {company?.phone && (
+                  <span className="flex items-center gap-1.5 text-slate-300 text-xs">
+                    <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                    {company.phone}
+                  </span>
+                )}
+                {company?.email && (
+                  <span className="flex items-center gap-1.5 text-slate-300 text-xs">
+                    <Mail className="w-3.5 h-3.5 text-violet-400" />
+                    {company.email}
+                  </span>
+                )}
+                {company?.website && (
+                  <span className="flex items-center gap-1.5 text-slate-300 text-xs">
+                    <Globe className="w-3.5 h-3.5 text-pink-400" />
+                    {company.website}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <div className="flex-shrink-0">
+              <Link
+                to={createPageUrl("Quotes") + "?new=1"}
+                className="flex items-center gap-2 bg-white text-slate-900 px-5 py-3 rounded-xl text-sm font-semibold hover:bg-slate-100 transition-colors shadow-lg"
+              >
+                <Plus className="w-4 h-4" />
+                Nueva Cotización
+              </Link>
+            </div>
           </div>
-          <Link
-            to={createPageUrl("Quotes") + "?new=1"}
-            className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Nueva Cotización
-          </Link>
         </div>
 
         <RecurringAlerts />

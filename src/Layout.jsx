@@ -50,20 +50,28 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Sidebar Desktop */}
       <aside className="hidden md:flex flex-col w-64 min-h-screen bg-white border-r border-gray-100 fixed left-0 top-0 bottom-0 z-30">
-        <div className="px-6 py-6 border-b border-gray-100">
-          
-
-
-
-
-
-
-
-
-
-
-
-          
+        <div className="px-5 py-5 border-b border-gray-100">
+          {company?.logo_url ? (
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl overflow-hidden bg-slate-50 border border-gray-100 flex-shrink-0">
+                <img src={company.logo_url} alt="Logo" className="w-full h-full object-contain p-0.5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-slate-900 truncate leading-tight">{company.company_name}</p>
+                {company.rut && <p className="text-xs text-slate-400 truncate font-mono">{company.rut}</p>}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-slate-900 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Wifi className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-900">{company?.company_name || "CotizaPro"}</p>
+                <p className="text-xs text-slate-400">Panel de gestión</p>
+              </div>
+            </div>
+          )}
         </div>
 
         <nav className="flex-1 px-3 py-6 space-y-1">
@@ -95,10 +103,16 @@ export default function Layout({ children, currentPageName }) {
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center">
-            <Wifi className="w-4 h-4 text-white" />
-          </div>
-          <span className="font-semibold text-slate-900 text-sm">TechQuote</span>
+          {company?.logo_url ? (
+            <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-50 border border-gray-100">
+              <img src={company.logo_url} alt="Logo" className="w-full h-full object-contain" />
+            </div>
+          ) : (
+            <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center">
+              <Wifi className="w-4 h-4 text-white" />
+            </div>
+          )}
+          <span className="font-semibold text-slate-900 text-sm">{company?.company_name || "CotizaPro"}</span>
         </div>
         <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2 rounded-lg hover:bg-gray-100">
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
