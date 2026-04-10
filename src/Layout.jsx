@@ -26,7 +26,7 @@ export default function Layout({ children, currentPageName }) {
   const [company, setCompany] = useState(null);
 
   useEffect(() => {
-    base44.entities.CompanySettings.list().then(data => {
+    base44.entities.CompanySettings.list().then((data) => {
       if (data && data.length > 0) setCompany(data[0]);
     });
     // Suscribirse a cambios en tiempo real
@@ -51,19 +51,19 @@ export default function Layout({ children, currentPageName }) {
       {/* Sidebar Desktop */}
       <aside className="hidden md:flex flex-col w-64 min-h-screen bg-white border-r border-gray-100 fixed left-0 top-0 bottom-0 z-30">
         <div className="px-6 py-6 border-b border-gray-100">
-          <div className="flex flex-col items-center gap-3">
-            {company?.logo_url ? (
-              <img src={company.logo_url} alt="Logo" className="w-28 h-28 object-contain rounded-2xl" />
-            ) : (
-              <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center">
-                <Wifi className="w-8 h-8 text-white" />
-              </div>
-            )}
-            <div className="text-center">
-              <p className="text-sm font-bold text-slate-900 leading-tight">{company?.company_name || "SOLUCIONES FML"}</p>
-              <p className="text-xs text-slate-400">Sistemas & Redes</p>
-            </div>
-          </div>
+          
+
+
+
+
+
+
+
+
+
+
+
+          
         </div>
 
         <nav className="flex-1 px-3 py-6 space-y-1">
