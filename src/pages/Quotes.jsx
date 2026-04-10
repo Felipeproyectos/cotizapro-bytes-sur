@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Plus, FileText, Search, Eye, Pencil, Trash2, Download, Copy } from "lucide-react";
+import { Plus, FileText, Search, Pencil, Trash2, Download, Copy, CreditCard, X } from "lucide-react";
 import { addDays, format as formatDate } from "date-fns";
 import QuoteForm from "../components/quotes/QuoteForm";
 import QuotePDF from "../components/quotes/QuotePDF";
@@ -18,10 +18,13 @@ const STATUS_COLORS = {
 export default function Quotes() {
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState("list"); // list | form | pdf
+  const [view, setView] = useState("list");
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Todos");
+  const [abonoModal, setAbonoModal] = useState(null); // quote
+  const [abonoForm, setAbonoForm] = useState({ monto: "", fecha: "", nota: "" });
+  const [savingAbono, setSavingAbono] = useState(false);
 
   const load = async () => {
     const data = await base44.entities.Quote.list("-created_date");
@@ -53,6 +56,22 @@ export default function Quotes() {
       abonos: [],
       valid_until: formatDate(addDays(new Date(), 30), "yyyy-MM-dd"),
     });
+    load();
+  };
+
+  const openAbonoModal = (q) => {
+    setAbonoModal(q);
+    setAbonoForm({ monto: "", fecha: formatDate(new Date(), "yyyy-MM-dd"), nota: "" });
+  };
+
+  const handleSaveAbono = async () => {
+    if (!abonoForm.monto || !abonoForm.fecha) return;
+    setSavingAbono(true);
+    const nuevoAbono = { fecha: abonoForm.fecha, monto: parseFloat(abonoForm.monto), nota: abonoForm.nota };
+    const abonos = [...(abonoModal.abonos || []), nuevoAbono];
+    await base44.entities.Quote.update(abonoModal.id, { abonos });
+    setSavingAbono(false);
+    setAbonoModal(null);
     load();
   };
 
@@ -202,6 +221,11 @@ export default function Quotes() {
                     <button onClick={() => handleDuplicate(q)} className="p-2 hover:bg-blue-50 rounded-lg" title="Duplicar">
                       <Copy className="w-4 h-4 text-blue-400" />
                     </button>
+                    {["Enviada", "Aceptada", "Ejecutada"].includes(q.status) && (
+                      <button onClick={() => openAbonoModal(q)} className="p-2 hover:bg-emerald-50 rounded-lg" title="Registrar Abono">
+                        <CreditCard className="w-4 h-4 text-emerald-500" />
+                      </button>
+                    )}
                     <button onClick={() => handleDelete(q.id)} className="p-2 hover:bg-red-50 rounded-lg" title="Eliminar">
                       <Trash2 className="w-4 h-4 text-red-400" />
                     </button>
@@ -212,6 +236,99 @@ export default function Quotes() {
           </div>
         )}
       </div>
+      {/* Modal Abono */}
+      {abonoModal && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">Registrar Abono</h2>
+                <p className="text-xs text-slate-400 mt-0.5">{abonoModal.client_name} · {abonoModal.quote_number}</p>
+              </div>
+              <button onClick={() => setAbonoModal(null)} className="p-1.5 hover:bg-gray-100 rounded-lg">
+                <X className="w-4 h-4 text-slate-400" />
+              </button>
+            </div>
+
+            {/* Resumen saldos */}
+            <div className="bg-slate-50 rounded-xl p-4 mb-5 space-y-1.5">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Total cotización</span>
+                <span className="font-semibold text-slate-900">{formatCLP(abonoModal.total)}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-500">Total abonado</span>
+                <span className="font-semibold text-emerald-600">{formatCLP((abonoModal.abonos || []).reduce((s,a) => s+(a.monto||0), 0))}</span>
+              </div>
+              <div className="flex justify-between text-sm border-t border-gray-200 pt-1.5">
+                <span className="font-semibold text-slate-700">Saldo pendiente</span>
+                <span className="font-bold text-red-500">{formatCLP((abonoModal.total||0) - (abonoModal.abonos||[]).reduce((s,a)=>s+(a.monto||0),0))}</span>
+              </div>
+            </div>
+
+            {/* Historial abonos */}
+            {(abonoModal.abonos||[]).length > 0 && (
+              <div className="mb-4">
+                <p className="text-xs font-semibold text-slate-500 mb-2">HISTORIAL DE ABONOS</p>
+                <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                  {abonoModal.abonos.map((a, i) => (
+                    <div key={i} className="flex justify-between items-center text-xs bg-gray-50 rounded-lg px-3 py-2">
+                      <span className="text-slate-500">{a.fecha}{a.nota ? ` · ${a.nota}` : ""}</span>
+                      <span className="font-semibold text-emerald-600">{formatCLP(a.monto)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Formulario */}
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-slate-700 block mb-1">Monto del abono *</label>
+                <input
+                  type="number"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                  placeholder="Ej: 50000"
+                  value={abonoForm.monto}
+                  onChange={e => setAbonoForm(f => ({...f, monto: e.target.value}))}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-700 block mb-1">Fecha *</label>
+                <input
+                  type="date"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                  value={abonoForm.fecha}
+                  onChange={e => setAbonoForm(f => ({...f, fecha: e.target.value}))}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-700 block mb-1">Nota (opcional)</label>
+                <input
+                  type="text"
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                  placeholder="Ej: Transferencia banco"
+                  value={abonoForm.nota}
+                  onChange={e => setAbonoForm(f => ({...f, nota: e.target.value}))}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-5">
+              <button onClick={() => setAbonoModal(null)} className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-slate-600 hover:bg-gray-50">
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveAbono}
+                disabled={savingAbono || !abonoForm.monto || !abonoForm.fecha}
+                className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+              >
+                {savingAbono ? "Guardando..." : "Registrar Abono"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

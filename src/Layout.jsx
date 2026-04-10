@@ -50,23 +50,23 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Sidebar Desktop */}
       <aside className="hidden md:flex flex-col w-64 min-h-screen bg-white border-r border-gray-100 fixed left-0 top-0 bottom-0 z-30">
-        <div className="px-5 py-5 border-b border-gray-100">
+        <div className="px-5 py-6 border-b border-gray-100">
           {company?.logo_url ? (
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl overflow-hidden bg-slate-50 border border-gray-100 flex-shrink-0">
-                <img src={company.logo_url} alt="Logo" className="w-full h-full object-contain p-0.5" />
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-28 h-28 rounded-2xl overflow-hidden bg-slate-50 border border-gray-100 flex-shrink-0">
+                <img src={company.logo_url} alt="Logo" className="w-full h-full object-contain p-1" />
               </div>
-              <div className="min-w-0">
+              <div className="text-center min-w-0">
                 <p className="text-sm font-bold text-slate-900 truncate leading-tight">{company.company_name}</p>
                 {company.rut && <p className="text-xs text-slate-400 truncate font-mono">{company.rut}</p>}
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-slate-900 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Wifi className="w-4 h-4 text-white" />
+            <div className="flex flex-col items-center gap-2">
+              <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <Wifi className="w-8 h-8 text-white" />
               </div>
-              <div>
+              <div className="text-center">
                 <p className="text-sm font-bold text-slate-900">{company?.company_name || "CotizaPro"}</p>
                 <p className="text-xs text-slate-400">Panel de gestión</p>
               </div>
