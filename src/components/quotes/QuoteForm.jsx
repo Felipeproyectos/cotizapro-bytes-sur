@@ -4,7 +4,7 @@ import { Plus, Trash2, UserSearch } from "lucide-react";
 import { addDays, format } from "date-fns";
 
 const IVA_RATE = 0.19;
-const emptyItem = { service_type_id: "", service_name: "", description: "", quantity: 1, unit_price: 0, total: 0 };
+const emptyItem = { service_type_id: "", service_name: "", description: "", quantity: 1, unit_price: 0, unit_price_uf: 0, total: 0, total_uf: 0 };
 
 function generateQuoteNumber() {
   const now = new Date();
@@ -19,6 +19,8 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
   const [form, setForm] = useState({
     quote_number: generateQuoteNumber(),
     title: "",
+    currency: "CLP",
+    uf_value: 38000,
     billing_type: "Único",
     billing_day: 5,
     client_name: "",
@@ -88,21 +90,37 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
   };
 
   const recalc = (f) => {
+    const ufVal = parseFloat(f.uf_value) || 1;
     const subtotal = f.items.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
+    const subtotal_uf = f.currency === "UF" ? f.items.reduce((sum, i) => sum + (parseFloat(i.total_uf) || 0), 0) : null;
     const discount_amount = parseFloat(f.discount_amount) || 0;
     const discount_percent = subtotal > 0 ? (discount_amount / subtotal) * 100 : 0;
     const subtotal_after_discount = subtotal - discount_amount;
     const include_iva = f.payment_type === "Con IVA (19%)";
     const iva_amount = include_iva ? subtotal_after_discount * IVA_RATE : 0;
     const total = subtotal_after_discount + iva_amount;
-    setForm({ ...f, subtotal, discount_amount, discount_percent, subtotal_after_discount, iva_amount, total, include_iva });
+    const total_uf = f.currency === "UF" ? total / ufVal : null;
+    setForm({ ...f, subtotal, subtotal_uf, discount_amount, discount_percent, subtotal_after_discount, iva_amount, total, total_uf, include_iva });
   };
 
   const updateItem = (idx, field, val) => {
     const items = [...form.items];
     items[idx] = { ...items[idx], [field]: val };
-    if (field === "quantity" || field === "unit_price") {
-      items[idx].total = (parseFloat(items[idx].quantity) || 0) * (parseFloat(items[idx].unit_price) || 0);
+    const ufVal = parseFloat(form.uf_value) || 1;
+    const isUF = form.currency === "UF";
+
+    if (field === "unit_price_uf" && isUF) {
+      items[idx].unit_price = (parseFloat(val) || 0) * ufVal;
+      items[idx].unit_price_uf = parseFloat(val) || 0;
+      items[idx].total_uf = (parseFloat(items[idx].quantity) || 0) * (parseFloat(val) || 0);
+      items[idx].total = items[idx].total_uf * ufVal;
+    } else if (field === "quantity" || field === "unit_price") {
+      if (isUF) {
+        items[idx].total_uf = (parseFloat(items[idx].quantity) || 0) * (parseFloat(items[idx].unit_price_uf) || 0);
+        items[idx].total = items[idx].total_uf * ufVal;
+      } else {
+        items[idx].total = (parseFloat(items[idx].quantity) || 0) * (parseFloat(items[idx].unit_price) || 0);
+      }
     }
     if (field === "service_type_id") {
       const svc = services.find(s => s.id === val);
@@ -110,7 +128,9 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
         items[idx].service_name = svc.name;
         items[idx].description = svc.description || "";
         items[idx].unit_price = svc.default_price || 0;
+        items[idx].unit_price_uf = svc.default_price ? svc.default_price / ufVal : 0;
         items[idx].total = items[idx].quantity * (svc.default_price || 0);
+        items[idx].total_uf = isUF ? items[idx].total / ufVal : 0;
       }
     }
     recalc({ ...form, items });
@@ -192,15 +212,20 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
   };
 
   const formatCLP = (n) => `$${Math.round(n || 0).toLocaleString("es-CL")}`;
+  const formatUF = (n) => `${(n || 0).toFixed(2)} UF`;
+  const isUF = form.currency === "UF";
+  const ufVal = parseFloat(form.uf_value) || 1;
 
   // Derived display values — computed live, never from stale form.total
   const subtotal = form.items.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
+  const subtotal_uf = isUF ? form.items.reduce((sum, i) => sum + (parseFloat(i.total_uf) || 0), 0) : 0;
   const discount_amount = parseFloat(form.discount_amount) || 0;
   const discount_percent = subtotal > 0 ? (discount_amount / subtotal) * 100 : 0;
   const subtotal_after_discount = subtotal - discount_amount;
   const include_iva = form.payment_type === "Con IVA (19%)";
   const iva_amount = include_iva ? subtotal_after_discount * IVA_RATE : 0;
   const total = subtotal_after_discount + iva_amount;
+  const total_uf = isUF ? total / ufVal : 0;
   const totalAbonos = (form.abonos || []).reduce((s, a) => s + (a.monto || 0), 0);
   const saldoPendiente = total - totalAbonos;
   const showAbonos = ["Enviada", "Aceptada", "Ejecutada"].includes(form.status);
@@ -238,6 +263,34 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
               value={form.valid_until} onChange={e => setField("valid_until", e.target.value)} />
           </div>
         </div>
+        {/* Moneda */}
+        <div className="mt-4">
+          <label className="text-xs font-medium text-slate-500 mb-2 block">Moneda</label>
+          <div className="flex gap-3 items-center flex-wrap">
+            {["CLP", "UF"].map(opt => (
+              <button key={opt} type="button" onClick={() => setField("currency", opt)}
+                className={`px-4 py-2 rounded-xl text-xs font-medium border transition-colors ${
+                  form.currency === opt ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"}`}>
+                {opt === "CLP" ? "💵 Pesos (CLP)" : "📊 UF"}
+              </button>
+            ))}
+            {form.currency === "UF" && (
+              <div className="flex items-center gap-2">
+                <label className="text-xs text-slate-500 whitespace-nowrap">Valor UF del día:</label>
+                <input type="number" min="1"
+                  className="w-32 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                  value={form.uf_value || ""}
+                  onChange={e => setField("uf_value", parseFloat(e.target.value) || 0)}
+                  placeholder="38000" />
+                <span className="text-xs text-slate-400">CLP</span>
+              </div>
+            )}
+          </div>
+          {form.currency === "UF" && (
+            <p className="text-xs text-blue-600 mt-1.5">Los precios se ingresan en UF. El total se calculará en CLP usando el valor de UF indicado.</p>
+          )}
+        </div>
+
         {/* Tipo de cobro */}
         <div className="mt-4">
           <label className="text-xs font-medium text-slate-500 mb-2 block">Tipo de cobro</label>
@@ -353,9 +406,22 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
                     value={item.description || ""} onChange={e => updateItem(idx, "description", e.target.value)} placeholder="Detalle..." />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="text-xs text-slate-400 mb-1 block">Precio Unit.</label>
-                  <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none"
-                    value={item.unit_price || ""} onChange={e => updateItem(idx, "unit_price", e.target.value)} />
+                  {form.currency === "UF" ? (
+                    <>
+                      <label className="text-xs text-slate-400 mb-1 block">Precio Unit. (UF)</label>
+                      <input type="number" step="0.01" className="w-full border border-blue-200 rounded-lg px-3 py-2 text-sm bg-blue-50 focus:outline-none"
+                        value={item.unit_price_uf || ""} onChange={e => updateItem(idx, "unit_price_uf", e.target.value)} placeholder="0.00 UF" />
+                      {item.unit_price_uf > 0 && (
+                        <p className="text-xs text-slate-400 mt-0.5">≈ {formatCLP(item.unit_price_uf * (form.uf_value || 1))}</p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <label className="text-xs text-slate-400 mb-1 block">Precio Unit. (CLP)</label>
+                      <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none"
+                        value={item.unit_price || ""} onChange={e => updateItem(idx, "unit_price", e.target.value)} />
+                    </>
+                  )}
                 </div>
                 <div className="md:col-span-1">
                   <label className="text-xs text-slate-400 mb-1 block">
@@ -366,7 +432,14 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
                 </div>
                 <div className="md:col-span-1">
                   <label className="text-xs text-slate-400 mb-1 block">Total</label>
-                  <p className="text-sm font-semibold text-slate-900 py-2">{formatCLP(item.total)}</p>
+                  <p className="text-sm font-semibold text-slate-900 py-2">
+                    {form.currency === "UF"
+                      ? `${(item.total_uf || 0).toFixed(2)} UF`
+                      : formatCLP(item.total)}
+                  </p>
+                  {form.currency === "UF" && item.total_uf > 0 && (
+                    <p className="text-xs text-slate-400">≈ {formatCLP(item.total)}</p>
+                  )}
                 </div>
                 <div className="md:col-span-1 flex items-end pb-1">
                   <button onClick={() => removeItem(idx)} className="p-2 hover:bg-red-50 rounded-lg text-red-400 hover:text-red-500">
@@ -402,41 +475,51 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
         <div className="mt-6 flex flex-col items-end gap-2">
           <div className="flex items-center gap-4 text-sm">
             <span className="text-slate-500">Subtotal</span>
-            <span className="font-semibold text-slate-900 w-32 text-right">{formatCLP(subtotal)}</span>
+            <span className="font-semibold text-slate-900 w-40 text-right">
+              {isUF ? formatUF(subtotal_uf) : formatCLP(subtotal)}
+              {isUF && <span className="block text-xs text-slate-400 font-normal">≈ {formatCLP(subtotal)}</span>}
+            </span>
           </div>
           {discount_amount > 0 && (
             <div className="flex items-center gap-4 text-sm">
               <span className="text-emerald-600">Descuento ({discount_percent.toFixed(1)}%)</span>
-              <span className="font-semibold text-emerald-600 w-32 text-right">-{formatCLP(discount_amount)}</span>
+              <span className="font-semibold text-emerald-600 w-40 text-right">-{formatCLP(discount_amount)}</span>
             </div>
           )}
           {discount_amount > 0 && (
             <div className="flex items-center gap-4 text-sm">
               <span className="text-slate-500">Subtotal c/descuento</span>
-              <span className="font-semibold text-slate-900 w-32 text-right">{formatCLP(subtotal_after_discount)}</span>
+              <span className="font-semibold text-slate-900 w-40 text-right">{formatCLP(subtotal_after_discount)}</span>
             </div>
           )}
           {include_iva && (
             <div className="flex items-center gap-4 text-sm">
               <span className="text-slate-500">IVA (19%)</span>
-              <span className="font-semibold text-slate-900 w-32 text-right">{formatCLP(iva_amount)}</span>
+              <span className="font-semibold text-slate-900 w-40 text-right">{formatCLP(iva_amount)}</span>
             </div>
           )}
           {form.payment_type === "Boleta de Honorarios" && (
             <>
               <div className="flex items-center gap-4 text-sm">
                 <span className="text-slate-500">Retención (10,75%)</span>
-                <span className="font-semibold text-red-600 w-32 text-right">-{formatCLP(subtotal_after_discount * 0.1075)}</span>
+                <span className="font-semibold text-red-600 w-40 text-right">-{formatCLP(subtotal_after_discount * 0.1075)}</span>
               </div>
               <div className="flex items-center gap-4 text-sm">
                 <span className="text-slate-500">Líquido a pagar</span>
-                <span className="font-semibold text-slate-900 w-32 text-right">{formatCLP(subtotal_after_discount * (1 - 0.1075))}</span>
+                <span className="font-semibold text-slate-900 w-40 text-right">{formatCLP(subtotal_after_discount * (1 - 0.1075))}</span>
               </div>
             </>
           )}
           <div className="flex items-center gap-4 border-t border-gray-200 pt-2 mt-1">
             <span className="text-base font-bold text-slate-900">Total</span>
-            <span className="text-base font-bold text-slate-900 w-32 text-right">{formatCLP(total)}</span>
+            <span className="text-base font-bold text-slate-900 w-40 text-right">
+              {isUF ? (
+                <>
+                  {formatUF(total_uf)}
+                  <span className="block text-xs text-slate-500 font-normal">≈ {formatCLP(total)}</span>
+                </>
+              ) : formatCLP(total)}
+            </span>
           </div>
         </div>
       </div>

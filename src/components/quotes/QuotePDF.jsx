@@ -19,6 +19,9 @@ export default function QuotePDF({ quote, onClose }) {
   }, []);
 
   const formatCLP = (n) => `$${Math.round(n || 0).toLocaleString("es-CL")}`;
+  const isUF = quote.currency === "UF";
+  const ufVal = quote.uf_value || 1;
+  const formatMoney = (clp, uf) => isUF && uf != null ? `${(uf || 0).toFixed(2)} UF` : formatCLP(clp);
   const statusColor = STATUS_COLORS[quote.status] || "#94a3b8";
 
   const totalAbonos = (quote.abonos || []).reduce((s, a) => s + (a.monto || 0), 0);
@@ -132,21 +135,23 @@ export default function QuotePDF({ quote, onClose }) {
           ${item.service_name && item.description ? `<div class="sub">${item.description}</div>` : ""}
         </td>
         <td class="center">${item.quantity}</td>
-        <td class="right">$${Math.round(item.unit_price || 0).toLocaleString("es-CL")}</td>
-        <td class="right bold">$${Math.round(item.total || 0).toLocaleString("es-CL")}</td>
+        <td class="right">${isUF ? `${(item.unit_price_uf || 0).toFixed(2)} UF` : `$${Math.round(item.unit_price || 0).toLocaleString("es-CL")}`}</td>
+        <td class="right bold">${isUF ? `${(item.total_uf || 0).toFixed(2)} UF` : `$${Math.round(item.total || 0).toLocaleString("es-CL")}`}</td>
       </tr>`).join("")}
     </tbody>
   </table>
   <div class="totals">
     <div class="totals-box">
-      <div class="total-row"><span>Subtotal</span><span>$${Math.round(quote.subtotal || 0).toLocaleString("es-CL")}</span></div>
+      <div class="total-row"><span>Subtotal</span><span>${isUF ? `${(quote.subtotal_uf || 0).toFixed(2)} UF` : `$${Math.round(quote.subtotal || 0).toLocaleString("es-CL")}`}</span></div>
+      ${isUF ? `<div class="total-note">1 UF = $${Math.round(ufVal).toLocaleString("es-CL")} CLP</div>` : ""}
       ${discount_amount > 0 ? `<div class="total-row"><span style="color:#059669">Descuento (${discount_percent.toFixed(1)}%)</span><span style="color:#059669">-$${Math.round(discount_amount).toLocaleString("es-CL")}</span></div>` : ""}
       ${paymentType === "Con IVA (19%)" ? `<div class="total-row"><span>IVA (19%)</span><span>$${Math.round(quote.iva_amount || 0).toLocaleString("es-CL")}</span></div>` : ""}
       ${isHonorarios ? `
         <div class="total-row"><span>Retención (10,75%)</span><span class="red">-$${Math.round(retencion).toLocaleString("es-CL")}</span></div>
         <div class="total-row"><span>Líquido a pagar</span><span>$${Math.round(liquidoHonorarios).toLocaleString("es-CL")}</span></div>
       ` : ""}
-      <div class="total-row final"><span>Total${isMensual ? " mensual" : ""}</span><span>$${Math.round(quote.total || 0).toLocaleString("es-CL")}</span></div>
+      <div class="total-row final"><span>Total${isMensual ? " mensual" : ""}</span><span>${isUF ? `${(quote.total_uf || 0).toFixed(2)} UF` : `$${Math.round(quote.total || 0).toLocaleString("es-CL")}`}</span></div>
+      ${isUF ? `<div class="total-note">≈ $${Math.round(quote.total || 0).toLocaleString("es-CL")} CLP</div>` : ""}
       ${paymentType === "Sin IVA" ? `<div class="total-note">* Precio no incluye IVA</div>` : ""}
     </div>
   </div>
@@ -326,8 +331,8 @@ ${quote.notes ? `
                       {item.service_name && item.description && <p className="text-xs text-slate-400 mt-0.5">{item.description}</p>}
                     </td>
                     <td className="py-3 px-3 text-center text-slate-600">{item.quantity}</td>
-                    <td className="py-3 px-3 text-right text-slate-600">{formatCLP(item.unit_price)}</td>
-                    <td className="py-3 px-3 text-right font-semibold text-slate-900">{formatCLP(item.total)}</td>
+                    <td className="py-3 px-3 text-right text-slate-600">{isUF ? `${(item.unit_price_uf || 0).toFixed(2)} UF` : formatCLP(item.unit_price)}</td>
+                    <td className="py-3 px-3 text-right font-semibold text-slate-900">{isUF ? `${(item.total_uf || 0).toFixed(2)} UF` : formatCLP(item.total)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -338,8 +343,9 @@ ${quote.notes ? `
               <div className="w-64 space-y-1.5">
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-500">Subtotal</span>
-                  <span className="font-medium text-slate-900">{formatCLP(quote.subtotal)}</span>
+                  <span className="font-medium text-slate-900">{isUF ? `${(quote.subtotal_uf || 0).toFixed(2)} UF` : formatCLP(quote.subtotal)}</span>
                 </div>
+                {isUF && <p className="text-xs text-slate-400 text-right">1 UF = {formatCLP(ufVal)}</p>}
                 {discount_amount > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-emerald-600">Descuento ({discount_percent.toFixed(1)}%)</span>
@@ -366,7 +372,10 @@ ${quote.notes ? `
                 )}
                 <div className="flex justify-between pt-2 border-t border-gray-200">
                   <span className="font-bold text-slate-900">Total{isMensual ? " mensual" : ""}</span>
-                  <span className="font-bold text-slate-900">{formatCLP(quote.total)}</span>
+                  <div className="text-right">
+                    <span className="font-bold text-slate-900">{isUF ? `${(quote.total_uf || 0).toFixed(2)} UF` : formatCLP(quote.total)}</span>
+                    {isUF && <p className="text-xs text-slate-400 font-normal">≈ {formatCLP(quote.total)}</p>}
+                  </div>
                 </div>
                 {paymentType === "Sin IVA" && (
                   <p className="text-xs text-slate-400">* Precio no incluye IVA</p>
