@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Check, Building2, Upload, ImageIcon } from "lucide-react";
+import { Check, Building2, Upload, ImageIcon, Trash2, AlertTriangle } from "lucide-react";
 
 export default function Settings() {
   const [form, setForm] = useState({
@@ -19,6 +19,8 @@ export default function Settings() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   useEffect(() => {
     base44.entities.CompanySettings.list().then(data => {
@@ -157,13 +159,55 @@ export default function Settings() {
             <button
               onClick={handleSave}
               disabled={saving || !form.company_name}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${
+              className={`select-none flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-medium transition-all ${
                 saved ? "bg-emerald-500 text-white" : "bg-slate-900 text-white hover:bg-slate-800"
               } disabled:opacity-50`}
             >
               <Check className="w-4 h-4" />
               {saving ? "Guardando..." : saved ? "¡Guardado!" : "Guardar Configuración"}
             </button>
+          </div>
+
+          {/* Delete Account */}
+          <div className="bg-white rounded-2xl border border-red-100 p-6">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertTriangle className="w-4 h-4 text-red-500" />
+              <h2 className="text-sm font-semibold text-red-600">Zona de Peligro</h2>
+            </div>
+            <p className="text-xs text-slate-500 mb-4">
+              Eliminar tu cuenta borrará permanentemente todos tus datos, cotizaciones y configuraciones. Esta acción no se puede deshacer.
+            </p>
+            {!showDeleteConfirm ? (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="select-none flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-red-600 border border-red-200 hover:bg-red-50 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Eliminar cuenta
+              </button>
+            ) : (
+              <div className="bg-red-50 rounded-xl p-4 space-y-3">
+                <p className="text-sm font-semibold text-red-700">¿Estás seguro? Esta acción es irreversible.</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="select-none flex-1 px-4 py-2 rounded-xl text-sm font-medium border border-gray-200 text-slate-600 hover:bg-white"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={async () => {
+                      setDeletingAccount(true);
+                      await base44.auth.logout();
+                    }}
+                    disabled={deletingAccount}
+                    className="select-none flex-1 px-4 py-2 rounded-xl text-sm font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {deletingAccount ? "Eliminando..." : "Sí, eliminar"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

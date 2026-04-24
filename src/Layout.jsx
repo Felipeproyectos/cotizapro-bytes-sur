@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
 import {
@@ -10,7 +10,8 @@ import {
   Menu,
   X,
   Wifi,
-  ChevronRight } from
+  ChevronRight,
+  ChevronLeft } from
 "lucide-react";
 
 const navItems = [
@@ -21,9 +22,20 @@ const navItems = [
 { name: "Configuración", page: "Settings", icon: Settings }];
 
 
+const ROOT_PAGES = ["Dashboard", "Quotes", "History", "Services", "Settings"];
+
 export default function Layout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [company, setCompany] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Show back button on non-root screens (sub-paths like /quotes/new)
+  const isRootPage = ROOT_PAGES.some(p => {
+    const pagePath = createPageUrl(p);
+    return location.pathname === pagePath || location.pathname === "/";
+  });
+  const showBack = !isRootPage || location.pathname.split("/").filter(Boolean).length > 1;
 
   useEffect(() => {
     base44.entities.CompanySettings.list().then((data) => {
@@ -81,7 +93,7 @@ export default function Layout({ children, currentPageName }) {
               <Link
                 key={page}
                 to={createPageUrl(page)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group ${
+                className={`select-none flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group ${
                 isActive ?
                 "bg-slate-900 text-white" :
                 "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}`
@@ -101,20 +113,32 @@ export default function Layout({ children, currentPageName }) {
       </aside>
 
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100 px-4 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {company?.logo_url ? (
-            <div className="w-8 h-8 rounded-lg overflow-hidden bg-slate-50 border border-gray-100">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-100 px-4 flex items-center justify-between safe-top" style={{ paddingTop: `calc(0.75rem + env(safe-area-inset-top))`, paddingBottom: "0.75rem" }}>
+        <div className="flex items-center gap-2 min-w-0">
+          {showBack ? (
+            <button
+              onClick={() => navigate(-1)}
+              className="select-none p-1.5 -ml-1.5 rounded-lg hover:bg-gray-100 mr-1 flex items-center gap-1 text-slate-700"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          ) : company?.logo_url ? (
+            <div className="w-7 h-7 rounded-lg overflow-hidden bg-slate-50 border border-gray-100 flex-shrink-0">
               <img src={company.logo_url} alt="Logo" className="w-full h-full object-contain" />
             </div>
           ) : (
-            <div className="w-8 h-8 bg-slate-900 rounded-lg flex items-center justify-center">
+            <div className="w-7 h-7 bg-slate-900 rounded-lg flex items-center justify-center flex-shrink-0">
               <Wifi className="w-4 h-4 text-white" />
             </div>
           )}
-          <span className="font-semibold text-slate-900 text-sm">{company?.company_name || "CotizaPro"}</span>
+          <span className="font-semibold text-slate-900 text-sm truncate">
+            {showBack
+              ? (navItems.find(n => createPageUrl(n.page) === location.pathname)?.name || "Atrás")
+              : (company?.company_name || "CotizaPro")
+            }
+          </span>
         </div>
-        <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2 rounded-lg hover:bg-gray-100">
+        <button onClick={() => setMobileOpen(!mobileOpen)} className="select-none p-2 rounded-lg hover:bg-gray-100">
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
       </div>
@@ -131,7 +155,7 @@ export default function Layout({ children, currentPageName }) {
                   key={page}
                   to={createPageUrl(page)}
                   onClick={() => setMobileOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  className={`select-none flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
                   isActive ? "bg-slate-900 text-white" : "text-slate-500 hover:bg-slate-50"}`
                   }>
 
@@ -147,10 +171,32 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Main Content */}
       <main className="flex-1 md:ml-64 pt-0 md:pt-0">
-        <div className="md:pt-0 pt-16">
+        <div className="md:pt-0 pt-16 safe-area-pb md:pb-0">
           {children}
         </div>
       </main>
+
+      {/* Mobile Bottom Tab Bar */}
+      <nav
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 flex items-stretch"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        {navItems.map(({ name, page, icon: Icon }) => {
+          const isActive = currentPageName === page;
+          return (
+            <Link
+              key={page}
+              to={createPageUrl(page)}
+              className={`select-none flex-1 flex flex-col items-center justify-center py-2 gap-0.5 transition-colors ${
+                isActive ? "text-slate-900" : "text-slate-400"
+              }`}
+            >
+              <Icon className={`w-5 h-5 ${isActive ? "text-slate-900" : "text-slate-400"}`} />
+              <span className={`text-[10px] font-medium ${isActive ? "text-slate-900" : "text-slate-400"}`}>{name}</span>
+            </Link>
+          );
+        })}
+      </nav>
     </div>);
 
 }

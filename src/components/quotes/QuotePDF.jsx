@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { X, Printer } from "lucide-react";
+import { X, Printer, Share } from "lucide-react";
 
 const STATUS_COLORS = {
   Borrador: "#94a3b8", Enviada: "#3b82f6", Aceptada: "#10b981",
@@ -11,6 +11,7 @@ const STATUS_COLORS = {
 
 export default function QuotePDF({ quote, onClose }) {
   const [company, setCompany] = useState(null);
+  const printFrameRef = useRef(null);
 
   useEffect(() => {
     base44.entities.CompanySettings.list().then(data => {
@@ -214,11 +215,36 @@ ${quote.notes ? `
 
 </body></html>`;
 
-    const win = window.open("", "_blank", "width=900,height=700");
-    win.document.write(html);
-    win.document.close();
-    win.focus();
-    setTimeout(() => { win.print(); }, 600);
+    // Use hidden iframe to avoid window.open (works on iOS)
+    let frame = printFrameRef.current;
+    if (!frame) {
+      frame = document.createElement("iframe");
+      frame.style.cssText = "position:fixed;top:0;left:0;width:0;height:0;border:0;opacity:0;";
+      document.body.appendChild(frame);
+      printFrameRef.current = frame;
+    }
+    frame.srcdoc = html;
+    frame.onload = () => {
+      try {
+        frame.contentWindow.focus();
+        frame.contentWindow.print();
+      } catch(e) {
+        // fallback for strict browsers: open in new tab
+        const blob = new Blob([html], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+        window.open(url, "_blank");
+      }
+    };
+  };
+
+  const handleShare = async () => {
+    const text = `Cotización ${quote.quote_number} — ${quote.client_name}`;
+    if (navigator.share) {
+      await navigator.share({ title: text, text });
+    } else {
+      await navigator.clipboard.writeText(text);
+      alert("Copiado al portapapeles");
+    }
   };
 
   return (
@@ -230,12 +256,20 @@ ${quote.notes ? `
             Vista previa — {paymentType}
             {isMensual && <span className="ml-2 bg-violet-500/30 text-violet-200 text-xs px-2 py-0.5 rounded-full">🔄 Mensual · Día {quote.billing_day}</span>}
           </p>
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <button onClick={handlePrint}
-              className="flex items-center gap-2 bg-white text-slate-900 px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-100">
-              <Printer className="w-4 h-4" /> Imprimir / Guardar PDF
+              className="select-none hidden sm:flex items-center gap-2 bg-white text-slate-900 px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-100">
+              <Printer className="w-4 h-4" /> Imprimir / PDF
             </button>
-            <button onClick={onClose} className="p-2 bg-white/10 hover:bg-white/20 rounded-xl text-white">
+            <button onClick={handlePrint}
+              className="select-none sm:hidden p-2 bg-white/10 hover:bg-white/20 rounded-xl text-white" title="Imprimir / PDF">
+              <Printer className="w-5 h-5" />
+            </button>
+            <button onClick={handleShare}
+              className="select-none p-2 bg-white/10 hover:bg-white/20 rounded-xl text-white" title="Compartir">
+              <Share className="w-5 h-5" />
+            </button>
+            <button onClick={onClose} className="select-none p-2 bg-white/10 hover:bg-white/20 rounded-xl text-white">
               <X className="w-5 h-5" />
             </button>
           </div>
