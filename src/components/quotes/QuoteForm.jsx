@@ -182,7 +182,7 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
     const include_iva = form.payment_type === "Con IVA (19%)";
     const iva_amount = include_iva ? subtotal_after_discount * IVA_RATE : 0;
     const total = subtotal_after_discount + iva_amount;
-    const payload = { ...form, subtotal, discount_amount, discount_percent, subtotal_after_discount, iva_amount, total, include_iva, payment_option: (form.payment_options || [])[0] || null };
+    const payload = { ...form, subtotal, discount_amount, discount_percent, subtotal_after_discount, iva_amount, total, include_iva, payment_options: form.payment_options || [] };
 
     let savedId = quote?.id;
     if (quote?.id) {
