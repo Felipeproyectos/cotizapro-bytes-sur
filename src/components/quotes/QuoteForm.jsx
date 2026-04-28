@@ -333,6 +333,40 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
             <p className="text-xs text-amber-600 mt-2">⚠️ Se aplicará retención del 10,75% sobre el monto bruto (norma chilena).</p>
           )}
         </div>
+
+        {/* Datos de Pago */}
+        {paymentOptions.length > 0 && (
+          <div className="mt-4">
+            <label className="text-xs font-medium text-slate-500 mb-1.5 block">Datos de Pago</label>
+            <select
+              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+              value={form.payment_option ? (form.payment_option.label + "|" + (form.payment_option.numero_cuenta || "")) : ""}
+              onChange={e => {
+                const val = e.target.value;
+                if (!val) { setField("payment_option", null); return; }
+                const found = paymentOptions.find(o => (o.label + "|" + (o.numero_cuenta || "")) === val);
+                setField("payment_option", found || null);
+              }}
+            >
+              <option value="">-- Sin datos de pago --</option>
+              {paymentOptions.map((opt, idx) => (
+                <option key={idx} value={opt.label + "|" + (opt.numero_cuenta || "")}>
+                  {opt.label}{opt.banco ? ` · ${opt.banco}` : ""}{opt.numero_cuenta ? ` · ${opt.numero_cuenta}` : ""}
+                </option>
+              ))}
+            </select>
+            {form.payment_option && (
+              <div className="mt-2 p-3 bg-slate-50 rounded-xl border border-gray-100 text-xs text-slate-500 flex flex-wrap gap-x-4 gap-y-0.5">
+                {form.payment_option.titular && <span>Titular: <strong className="text-slate-700">{form.payment_option.titular}</strong></span>}
+                {form.payment_option.rut && <span>RUT: <strong className="text-slate-700">{form.payment_option.rut}</strong></span>}
+                {form.payment_option.banco && <span>Banco: <strong className="text-slate-700">{form.payment_option.banco}</strong></span>}
+                {form.payment_option.tipo_cuenta && <span>Tipo: <strong className="text-slate-700">{form.payment_option.tipo_cuenta}</strong></span>}
+                {form.payment_option.numero_cuenta && <span>N° cuenta: <strong className="text-slate-700">{form.payment_option.numero_cuenta}</strong></span>}
+                {form.payment_option.email_confirmacion && <span>Email: <strong className="text-slate-700">{form.payment_option.email_confirmacion}</strong></span>}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Client */}
@@ -576,39 +610,7 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
         </div>
       )}
 
-      {/* Datos de Pago */}
-      {paymentOptions.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-6">
-          <h2 className="text-sm font-semibold text-slate-900 mb-4">Datos de Pago</h2>
-          <div className="space-y-2">
-            {paymentOptions.map((opt, idx) => {
-              const isSelected = form.payment_option?.label === opt.label && form.payment_option?.numero_cuenta === opt.numero_cuenta;
-              return (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setField("payment_option", isSelected ? null : opt)}
-                  className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
-                    isSelected
-                      ? "border-slate-900 bg-slate-50"
-                      : "border-gray-100 hover:border-gray-300 bg-white"
-                  }`}
-                >
-                  <p className="text-sm font-semibold text-slate-900">{opt.label}</p>
-                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
-                    {opt.titular && <span className="text-xs text-slate-500">Titular: {opt.titular}</span>}
-                    {opt.banco && <span className="text-xs text-slate-500">Banco: {opt.banco}</span>}
-                    {opt.numero_cuenta && <span className="text-xs text-slate-500">Cuenta: {opt.numero_cuenta}</span>}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-          {!form.payment_option && (
-            <p className="text-xs text-slate-400 mt-2">* Selecciona una opción de pago para incluirla en la cotización.</p>
-          )}
-        </div>
-      )}
+
 
       {/* Notes */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
