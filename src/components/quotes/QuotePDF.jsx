@@ -190,18 +190,24 @@ ${(quote.abonos || []).length > 0 ? `
   </div>
 </div>` : ""}
 
-${quote.payment_option ? `
-<div class="payment-section">
-  <div class="section-title">Datos de Pago${quote.payment_option.label ? ` · ${quote.payment_option.label}` : ""}</div>
-  <div class="grid2">
-    ${quote.payment_option.titular ? `<div><div class="field-label">Titular</div><div class="field-value">${quote.payment_option.titular}</div></div>` : ""}
-    ${quote.payment_option.rut ? `<div><div class="field-label">RUT</div><div class="field-value">${quote.payment_option.rut}</div></div>` : ""}
-    ${quote.payment_option.banco ? `<div><div class="field-label">Banco</div><div class="field-value">${quote.payment_option.banco}</div></div>` : ""}
-    ${quote.payment_option.tipo_cuenta ? `<div><div class="field-label">Tipo de cuenta</div><div class="field-value">${quote.payment_option.tipo_cuenta}</div></div>` : ""}
-    ${quote.payment_option.numero_cuenta ? `<div><div class="field-label">N° de Cuenta</div><div class="field-value">${quote.payment_option.numero_cuenta}</div></div>` : ""}
-    ${quote.payment_option.email_confirmacion ? `<div><div class="field-label">Email de confirmación</div><div class="field-value">${quote.payment_option.email_confirmacion}</div></div>` : ""}
-  </div>
-</div>` : ""}
+${(() => {
+      const opts = quote.payment_options?.length > 0 ? quote.payment_options : (quote.payment_option ? [quote.payment_option] : []);
+      if (opts.length === 0) return "";
+      return `<div class="payment-section">
+  <div class="section-title">Datos de Pago</div>
+  ${opts.map((po, i) => `
+    ${po.label ? `<div style="font-size:11px;font-weight:600;color:#475569;margin-bottom:6px;${i > 0 ? 'margin-top:12px;padding-top:10px;border-top:1px solid #e2e8f0;' : ''}">${po.label}</div>` : ""}
+    <div class="grid2">
+      ${po.titular ? `<div><div class="field-label">Titular</div><div class="field-value">${po.titular}</div></div>` : ""}
+      ${po.rut ? `<div><div class="field-label">RUT</div><div class="field-value">${po.rut}</div></div>` : ""}
+      ${po.banco ? `<div><div class="field-label">Banco</div><div class="field-value">${po.banco}</div></div>` : ""}
+      ${po.tipo_cuenta ? `<div><div class="field-label">Tipo de cuenta</div><div class="field-value">${po.tipo_cuenta}</div></div>` : ""}
+      ${po.numero_cuenta ? `<div><div class="field-label">N° de Cuenta</div><div class="field-value">${po.numero_cuenta}</div></div>` : ""}
+      ${po.email_confirmacion ? `<div><div class="field-label">Email de confirmación</div><div class="field-value">${po.email_confirmacion}</div></div>` : ""}
+    </div>
+  `).join("")}
+</div>`;
+    })()}
 
 ${quote.notes ? `
 <div class="notes">
@@ -455,21 +461,31 @@ ${quote.notes ? `
           )}
 
           {/* Payment Info */}
-          {quote.payment_option && (
-            <div className="px-10 py-5 border-t border-gray-100" style={{ background: "#f8fafc" }}>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">
-                Datos de Pago{quote.payment_option.label ? ` · ${quote.payment_option.label}` : ""}
-              </p>
-              <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 text-sm">
-                {quote.payment_option.titular && <div><p className="text-xs text-slate-400">Titular</p><p className="font-medium text-slate-800">{quote.payment_option.titular}</p></div>}
-                {quote.payment_option.rut && <div><p className="text-xs text-slate-400">RUT</p><p className="font-medium text-slate-800">{quote.payment_option.rut}</p></div>}
-                {quote.payment_option.banco && <div><p className="text-xs text-slate-400">Banco</p><p className="font-medium text-slate-800">{quote.payment_option.banco}</p></div>}
-                {quote.payment_option.tipo_cuenta && <div><p className="text-xs text-slate-400">Tipo de cuenta</p><p className="font-medium text-slate-800">{quote.payment_option.tipo_cuenta}</p></div>}
-                {quote.payment_option.numero_cuenta && <div><p className="text-xs text-slate-400">N° de Cuenta</p><p className="font-medium text-slate-800">{quote.payment_option.numero_cuenta}</p></div>}
-                {quote.payment_option.email_confirmacion && <div><p className="text-xs text-slate-400">Email de confirmación</p><p className="font-medium text-slate-800">{quote.payment_option.email_confirmacion}</p></div>}
+          {(() => {
+            const opts = quote.payment_options?.length > 0 ? quote.payment_options : (quote.payment_option ? [quote.payment_option] : []);
+            if (opts.length === 0) return null;
+            return (
+              <div className="px-10 py-5 border-t border-gray-100" style={{ background: "#f8fafc" }}>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Datos de Pago</p>
+                <div className="space-y-4">
+                  {opts.map((po, i) => (
+                    <div key={i}>
+                      {po.label && <p className="text-xs font-semibold text-slate-600 mb-1">{po.label}</p>}
+                      <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 text-sm">
+                        {po.titular && <div><p className="text-xs text-slate-400">Titular</p><p className="font-medium text-slate-800">{po.titular}</p></div>}
+                        {po.rut && <div><p className="text-xs text-slate-400">RUT</p><p className="font-medium text-slate-800">{po.rut}</p></div>}
+                        {po.banco && <div><p className="text-xs text-slate-400">Banco</p><p className="font-medium text-slate-800">{po.banco}</p></div>}
+                        {po.tipo_cuenta && <div><p className="text-xs text-slate-400">Tipo de cuenta</p><p className="font-medium text-slate-800">{po.tipo_cuenta}</p></div>}
+                        {po.numero_cuenta && <div><p className="text-xs text-slate-400">N° de Cuenta</p><p className="font-medium text-slate-800">{po.numero_cuenta}</p></div>}
+                        {po.email_confirmacion && <div><p className="text-xs text-slate-400">Email de confirmación</p><p className="font-medium text-slate-800">{po.email_confirmacion}</p></div>}
+                      </div>
+                      {i < opts.length - 1 && <hr className="mt-3 border-gray-200" />}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Notes */}
           {quote.notes && (
