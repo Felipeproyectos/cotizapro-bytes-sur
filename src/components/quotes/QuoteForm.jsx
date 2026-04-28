@@ -14,6 +14,7 @@ function generateQuoteNumber() {
 export default function QuoteForm({ quote, onSave, onCancel }) {
   const [services, setServices] = useState([]);
   const [pastQuotes, setPastQuotes] = useState([]);
+  const [paymentOptions, setPaymentOptions] = useState([]);
   const [clientSearch, setClientSearch] = useState("");
   const [showClientDropdown, setShowClientDropdown] = useState(false);
   const [form, setForm] = useState({
@@ -32,6 +33,7 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
     items: [{ ...emptyItem }],
     payment_type: "Sin IVA",
     include_iva: false,
+    payment_option: null,
     status: "Borrador",
     notes: "",
     valid_until: format(addDays(new Date(), 30), "yyyy-MM-dd"),
@@ -48,14 +50,16 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
   useEffect(() => {
     base44.entities.ServiceType.list("name").then(setServices);
     base44.entities.Quote.list("-created_date", 100).then(setPastQuotes);
-    if (quote) {
-      setForm(prev => ({ ...prev, ...quote, abonos: quote.abonos || [] }));
-    } else {
-      base44.entities.CompanySettings.list().then(data => {
-        if (data && data.length > 0 && data[0].quote_notes_default) {
+    base44.entities.CompanySettings.list().then(data => {
+      if (data && data.length > 0) {
+        setPaymentOptions(data[0].payment_options || []);
+        if (!quote && data[0].quote_notes_default) {
           setForm(prev => ({ ...prev, notes: data[0].quote_notes_default }));
         }
-      });
+      }
+    });
+    if (quote) {
+      setForm(prev => ({ ...prev, ...quote, abonos: quote.abonos || [] }));
     }
   }, []);
 
@@ -569,6 +573,40 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Datos de Pago */}
+      {paymentOptions.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <h2 className="text-sm font-semibold text-slate-900 mb-4">Datos de Pago</h2>
+          <div className="space-y-2">
+            {paymentOptions.map((opt, idx) => {
+              const isSelected = form.payment_option?.label === opt.label && form.payment_option?.numero_cuenta === opt.numero_cuenta;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setField("payment_option", isSelected ? null : opt)}
+                  className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                    isSelected
+                      ? "border-slate-900 bg-slate-50"
+                      : "border-gray-100 hover:border-gray-300 bg-white"
+                  }`}
+                >
+                  <p className="text-sm font-semibold text-slate-900">{opt.label}</p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
+                    {opt.titular && <span className="text-xs text-slate-500">Titular: {opt.titular}</span>}
+                    {opt.banco && <span className="text-xs text-slate-500">Banco: {opt.banco}</span>}
+                    {opt.numero_cuenta && <span className="text-xs text-slate-500">Cuenta: {opt.numero_cuenta}</span>}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          {!form.payment_option && (
+            <p className="text-xs text-slate-400 mt-2">* Selecciona una opción de pago para incluirla en la cotización.</p>
+          )}
         </div>
       )}
 

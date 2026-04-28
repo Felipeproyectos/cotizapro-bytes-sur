@@ -190,17 +190,18 @@ ${(quote.abonos || []).length > 0 ? `
   </div>
 </div>` : ""}
 
+${quote.payment_option ? `
 <div class="payment-section">
-  <div class="section-title">Datos de Pago</div>
+  <div class="section-title">Datos de Pago${quote.payment_option.label ? ` · ${quote.payment_option.label}` : ""}</div>
   <div class="grid2">
-    <div><div class="field-label">Forma de pago</div><div class="field-value">Efectivo, Transferencia o Boleta de Honorarios</div></div>
-    <div><div class="field-label">Titular</div><div class="field-value">Felipe Aguilar Monsalve</div></div>
-    <div><div class="field-label">RUT</div><div class="field-value">18.460.276-8</div></div>
-    <div><div class="field-label">Banco</div><div class="field-value">Banco de Chile · Cuenta Corriente</div></div>
-    <div><div class="field-label">N° de Cuenta</div><div class="field-value">00-804-03035-09</div></div>
-    <div><div class="field-label">Email de confirmación</div><div class="field-value">felipemonsalveaguilar@gmail.com</div></div>
+    ${quote.payment_option.titular ? `<div><div class="field-label">Titular</div><div class="field-value">${quote.payment_option.titular}</div></div>` : ""}
+    ${quote.payment_option.rut ? `<div><div class="field-label">RUT</div><div class="field-value">${quote.payment_option.rut}</div></div>` : ""}
+    ${quote.payment_option.banco ? `<div><div class="field-label">Banco</div><div class="field-value">${quote.payment_option.banco}</div></div>` : ""}
+    ${quote.payment_option.tipo_cuenta ? `<div><div class="field-label">Tipo de cuenta</div><div class="field-value">${quote.payment_option.tipo_cuenta}</div></div>` : ""}
+    ${quote.payment_option.numero_cuenta ? `<div><div class="field-label">N° de Cuenta</div><div class="field-value">${quote.payment_option.numero_cuenta}</div></div>` : ""}
+    ${quote.payment_option.email_confirmacion ? `<div><div class="field-label">Email de confirmación</div><div class="field-value">${quote.payment_option.email_confirmacion}</div></div>` : ""}
   </div>
-</div>
+</div>` : ""}
 
 ${quote.notes ? `
 <div class="notes">
@@ -454,17 +455,21 @@ ${quote.notes ? `
           )}
 
           {/* Payment Info */}
-          <div className="px-10 py-5 border-t border-gray-100" style={{ background: "#f8fafc" }}>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Datos de Pago</p>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 text-sm">
-              <div><p className="text-xs text-slate-400">Forma de pago</p><p className="font-medium text-slate-800">Efectivo, Transferencia o Boleta de Honorarios</p></div>
-              <div><p className="text-xs text-slate-400">Titular</p><p className="font-medium text-slate-800">Felipe Aguilar Monsalve</p></div>
-              <div><p className="text-xs text-slate-400">RUT</p><p className="font-medium text-slate-800">18.460.276-8</p></div>
-              <div><p className="text-xs text-slate-400">Banco</p><p className="font-medium text-slate-800">Banco de Chile · Cuenta Corriente</p></div>
-              <div><p className="text-xs text-slate-400">N° de Cuenta</p><p className="font-medium text-slate-800">00-804-03035-09</p></div>
-              <div><p className="text-xs text-slate-400">Email de confirmación</p><p className="font-medium text-slate-800">felipemonsalveaguilar@gmail.com</p></div>
+          {quote.payment_option && (
+            <div className="px-10 py-5 border-t border-gray-100" style={{ background: "#f8fafc" }}>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">
+                Datos de Pago{quote.payment_option.label ? ` · ${quote.payment_option.label}` : ""}
+              </p>
+              <div className="grid grid-cols-2 gap-x-8 gap-y-1.5 text-sm">
+                {quote.payment_option.titular && <div><p className="text-xs text-slate-400">Titular</p><p className="font-medium text-slate-800">{quote.payment_option.titular}</p></div>}
+                {quote.payment_option.rut && <div><p className="text-xs text-slate-400">RUT</p><p className="font-medium text-slate-800">{quote.payment_option.rut}</p></div>}
+                {quote.payment_option.banco && <div><p className="text-xs text-slate-400">Banco</p><p className="font-medium text-slate-800">{quote.payment_option.banco}</p></div>}
+                {quote.payment_option.tipo_cuenta && <div><p className="text-xs text-slate-400">Tipo de cuenta</p><p className="font-medium text-slate-800">{quote.payment_option.tipo_cuenta}</p></div>}
+                {quote.payment_option.numero_cuenta && <div><p className="text-xs text-slate-400">N° de Cuenta</p><p className="font-medium text-slate-800">{quote.payment_option.numero_cuenta}</p></div>}
+                {quote.payment_option.email_confirmacion && <div><p className="text-xs text-slate-400">Email de confirmación</p><p className="font-medium text-slate-800">{quote.payment_option.email_confirmacion}</p></div>}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Notes */}
           {quote.notes && (

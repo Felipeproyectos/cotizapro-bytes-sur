@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Check, Building2, Upload, ImageIcon, Trash2, AlertTriangle } from "lucide-react";
+import { Check, Building2, Upload, ImageIcon, Trash2, AlertTriangle, CreditCard } from "lucide-react";
+import PaymentOptionsEditor from "../components/settings/PaymentOptionsEditor";
 
 export default function Settings() {
   const [form, setForm] = useState({
@@ -13,6 +14,7 @@ export default function Settings() {
     logo_url: "",
     quote_notes_default: "",
     quote_validity_days: 30,
+    payment_options: [],
   });
   const [settingsId, setSettingsId] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -153,6 +155,21 @@ export default function Settings() {
                 />
               </div>
             </div>
+          </div>
+
+          {/* Opciones de Pago */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <div className="flex items-center gap-2 mb-5">
+              <CreditCard className="w-4 h-4 text-slate-500" />
+              <h2 className="text-sm font-semibold text-slate-900">Opciones de Datos de Pago</h2>
+            </div>
+            <p className="text-xs text-slate-400 mb-4">
+              Configura hasta 5 opciones de pago. Al crear una cotización podrás seleccionar cuál incluir en el PDF.
+            </p>
+            <PaymentOptionsEditor
+              options={form.payment_options || []}
+              onChange={(opts) => setField("payment_options", opts)}
+            />
           </div>
 
           <div className="flex justify-end">

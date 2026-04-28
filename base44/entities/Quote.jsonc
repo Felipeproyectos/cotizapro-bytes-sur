@@ -127,6 +127,33 @@
     "total_uf": {
       "type": "number"
     },
+    "payment_option": {
+      "type": "object",
+      "description": "Opci\u00f3n de datos de pago seleccionada para esta cotizaci\u00f3n",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "titular": {
+          "type": "string"
+        },
+        "rut": {
+          "type": "string"
+        },
+        "banco": {
+          "type": "string"
+        },
+        "tipo_cuenta": {
+          "type": "string"
+        },
+        "numero_cuenta": {
+          "type": "string"
+        },
+        "email_confirmacion": {
+          "type": "string"
+        }
+      }
+    },
     "abonos": {
       "type": "array",
       "items": {

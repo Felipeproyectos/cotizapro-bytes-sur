@@ -1,0 +1,72 @@
+{
+  "name": "CompanySettings",
+  "type": "object",
+  "properties": {
+    "company_name": {
+      "type": "string",
+      "description": "Nombre de la empresa"
+    },
+    "rut": {
+      "type": "string",
+      "description": "RUT de la empresa"
+    },
+    "address": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "website": {
+      "type": "string"
+    },
+    "logo_url": {
+      "type": "string"
+    },
+    "quote_notes_default": {
+      "type": "string",
+      "description": "Notas por defecto en cotizaciones"
+    },
+    "quote_validity_days": {
+      "type": "number",
+      "default": 30,
+      "description": "D\u00edas de validez de cotizaciones"
+    },
+    "payment_options": {
+      "type": "array",
+      "description": "Opciones de datos de pago predefinidas",
+      "items": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Nombre de la opci\u00f3n"
+          },
+          "titular": {
+            "type": "string"
+          },
+          "rut": {
+            "type": "string"
+          },
+          "banco": {
+            "type": "string"
+          },
+          "tipo_cuenta": {
+            "type": "string"
+          },
+          "numero_cuenta": {
+            "type": "string"
+          },
+          "email_confirmacion": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "company_name"
+  ]
+}
