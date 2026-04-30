@@ -4,11 +4,11 @@
   "properties": {
     "quote_number": {
       "type": "string",
-      "description": "N\u00famero de cotizaci\u00f3n"
+      "description": "Número de cotización"
     },
     "title": {
       "type": "string",
-      "description": "T\u00edtulo o asunto de la cotizaci\u00f3n"
+      "description": "Título o asunto de la cotización"
     },
     "currency": {
       "type": "string",
@@ -17,24 +17,24 @@
         "UF"
       ],
       "default": "CLP",
-      "description": "Moneda de la cotizaci\u00f3n"
+      "description": "Moneda de la cotización"
     },
     "uf_value": {
       "type": "number",
-      "description": "Valor de la UF en pesos CLP al momento de la cotizaci\u00f3n"
+      "description": "Valor de la UF en pesos CLP al momento de la cotización"
     },
     "billing_type": {
       "type": "string",
       "enum": [
-        "\u00danico",
+        "Único",
         "Mensual"
       ],
-      "default": "\u00danico",
+      "default": "Único",
       "description": "Tipo de cobro"
     },
     "billing_day": {
       "type": "number",
-      "description": "D\u00eda del mes para cobro mensual (1-28)"
+      "description": "Día del mes para cobro mensual (1-28)"
     },
     "client_name": {
       "type": "string"
@@ -82,6 +82,11 @@
           },
           "total_uf": {
             "type": "number"
+          },
+          "is_operational_expense": {
+            "type": "boolean",
+            "default": false,
+            "description": "Indica si este ítem es un gasto operacional interno (no cuenta como ganancia)"
           }
         }
       }
@@ -103,7 +108,7 @@
     },
     "subtotal_after_discount": {
       "type": "number",
-      "description": "Subtotal despu\u00e9s del descuento"
+      "description": "Subtotal después del descuento"
     },
     "payment_type": {
       "type": "string",
@@ -127,9 +132,18 @@
     "total_uf": {
       "type": "number"
     },
+    "total_operational_expenses": {
+      "type": "number",
+      "description": "Suma total de los gastos operacionales de esta cotización",
+      "default": 0
+    },
+    "net_profit": {
+      "type": "number",
+      "description": "Ganancia neta = total cobrado al cliente - gastos operacionales"
+    },
     "payment_options": {
       "type": "array",
-      "description": "Opciones de datos de pago seleccionadas para esta cotizaci\u00f3n",
+      "description": "Opciones de datos de pago seleccionadas para esta cotización",
       "items": {
         "type": "object",
         "properties": {
