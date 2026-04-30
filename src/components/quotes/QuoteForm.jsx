@@ -238,17 +238,13 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
 
   return (
     <div className="space-y-6">
-      {/* Header - Datos Cotización */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
         <h2 className="text-sm font-semibold text-slate-900 mb-4">Datos de la Cotización</h2>
         <div className="mb-4">
           <label className="text-xs font-medium text-slate-500 mb-1.5 block">Título / Asunto <span className="text-slate-300">(opcional)</span></label>
-          <input
-            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-            value={form.title || ""}
-            onChange={e => setField("title", e.target.value)}
-            placeholder="Ej: Instalación eléctrica Don Pedro, Cámaras sucursal norte..."
-          />
+          <input className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+            value={form.title || ""} onChange={e => setField("title", e.target.value)}
+            placeholder="Ej: Instalación eléctrica Don Pedro, Cámaras sucursal norte..." />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -281,8 +277,7 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
             {form.currency === "UF" && (
               <div className="flex items-center gap-2">
                 <label className="text-xs text-slate-500 whitespace-nowrap">Valor UF del día:</label>
-                <input type="number" min="1"
-                  className="w-32 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                <input type="number" min="1" className="w-32 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                   value={form.uf_value || ""} onChange={e => setField("uf_value", parseFloat(e.target.value) || 0)} placeholder="38000" />
                 <span className="text-xs text-slate-400">CLP</span>
               </div>
@@ -303,8 +298,7 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
           {form.billing_type === "Mensual" && (
             <div className="mt-3 flex items-center gap-3">
               <label className="text-xs font-medium text-slate-500 whitespace-nowrap">Día de cobro (cada mes):</label>
-              <input type="number" min="1" max="28"
-                className="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+              <input type="number" min="1" max="28" className="w-20 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                 value={form.billing_day || 5} onChange={e => setField("billing_day", parseInt(e.target.value))} />
               <span className="text-xs text-slate-400">de cada mes</span>
             </div>
@@ -356,7 +350,6 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
         )}
       </div>
 
-      {/* Client */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-slate-900">Datos del Cliente</h2>
@@ -375,8 +368,7 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
                 <div className="max-h-48 overflow-y-auto py-1">
                   {filteredClients.length === 0 && <p className="text-xs text-slate-400 px-4 py-3">No hay clientes previos</p>}
                   {filteredClients.map((c, i) => (
-                    <button key={i} type="button" onClick={() => fillFromClient(c)}
-                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm">
+                    <button key={i} type="button" onClick={() => fillFromClient(c)} className="w-full text-left px-4 py-2.5 hover:bg-gray-50 text-sm">
                       <p className="font-medium text-slate-900">{c.client_name}</p>
                       {c.client_company && <p className="text-xs text-slate-400">{c.client_company}</p>}
                       {c.client_rut && <p className="text-xs text-slate-300">{c.client_rut}</p>}
@@ -405,7 +397,6 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
         </div>
       </div>
 
-      {/* Items */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-slate-900">Servicios / Ítems</h2>
@@ -416,14 +407,11 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
         <div className="space-y-3">
           {form.items.map((item, idx) => (
             <div key={idx} className={`border rounded-xl p-4 ${item.is_operational_expense ? "border-orange-200 bg-orange-50/40" : "border-gray-100 bg-gray-50/50"}`}>
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center mb-3">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={!!item.is_operational_expense}
+                  <input type="checkbox" checked={!!item.is_operational_expense}
                     onChange={e => updateItem(idx, "is_operational_expense", e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300"
-                  />
+                    className="w-4 h-4 rounded border-gray-300" />
                   <span className={`text-xs font-medium ${item.is_operational_expense ? "text-orange-600" : "text-slate-400"}`}>
                     {item.is_operational_expense ? "⚙️ Gasto Operacional — no suma al total del cliente" : "Marcar como Gasto Operacional"}
                   </span>
@@ -483,15 +471,13 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
           ))}
         </div>
 
-        {/* Descuento */}
         <div className="mt-5 border border-dashed border-gray-200 rounded-xl p-4 bg-gray-50/50">
           <div className="flex items-center gap-4">
             <div className="flex-1">
               <label className="text-xs font-medium text-slate-500 mb-1 block">Descuento (en pesos CLP)</label>
               <input type="number" min="0"
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                value={form.discount_amount || ""} placeholder="0"
-                onChange={e => setField("discount_amount", e.target.value)} />
+                value={form.discount_amount || ""} placeholder="0" onChange={e => setField("discount_amount", e.target.value)} />
             </div>
             {discount_amount > 0 && (
               <div className="text-right shrink-0">
@@ -503,7 +489,6 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
           </div>
         </div>
 
-        {/* Gastos Operacionales resumen */}
         {opItems.length > 0 && (
           <div className="mt-5 p-4 bg-orange-50 border border-orange-200 rounded-xl">
             <p className="text-xs font-bold text-orange-700 mb-2">⚙️ Gastos Operacionales (internos — no se cobran al cliente)</p>
@@ -520,7 +505,6 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
           </div>
         )}
 
-        {/* Totals */}
         <div className="mt-6 flex flex-col items-end gap-2">
           <div className="flex items-center gap-4 text-sm">
             <span className="text-slate-500">Subtotal</span>
@@ -573,7 +557,6 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
         </div>
       </div>
 
-      {/* Abonos */}
       {showAbonos && (
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <div className="flex items-center justify-between mb-4">
@@ -619,7 +602,6 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
         </div>
       )}
 
-      {/* Notes */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
         <label className="text-xs font-medium text-slate-500 mb-1.5 block">Notas / Condiciones</label>
         <textarea className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10 resize-none"
@@ -627,7 +609,6 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
           placeholder="Condiciones de pago, garantías, observaciones..." />
       </div>
 
-      {/* Actions */}
       <div className="flex justify-end gap-3">
         <button onClick={onCancel} className="px-5 py-2.5 text-sm text-slate-500 border border-gray-200 rounded-xl hover:bg-gray-50">
           Cancelar
