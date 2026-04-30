@@ -53,8 +53,8 @@ export default function Dashboard() {
   const executedQuotes = quotes.filter(q => (q.status === "Ejecutada" || q.status === "Aceptada") && q.billing_type !== "Mensual");
   const monthlyQuotes = quotes.filter(q => (q.status === "Ejecutada" || q.status === "Aceptada") && q.billing_type === "Mensual");
   
-  const totalRevenue = executedQuotes.reduce((sum, q) => sum + (q.total || 0), 0);
-  const monthlyRevenue = monthlyQuotes.reduce((sum, q) => sum + (q.total || 0), 0);
+    const totalRevenue = executedQuotes.reduce((sum, q) => sum + (q.total || 0) - (q.total_operational_expenses || 0), 0);
+    const monthlyRevenue = monthlyQuotes.reduce((sum, q) => sum + (q.total || 0) - (q.total_operational_expenses || 0), 0);
 
   const statusCounts = quotes.reduce((acc, q) => {
     acc[q.status] = (acc[q.status] || 0) + 1;
@@ -74,7 +74,7 @@ export default function Dashboard() {
     });
     return {
       month: format(date, "MMM", { locale: es }),
-      total: monthQuotes.reduce((sum, q) => sum + (q.total || 0), 0),
+              total: monthQuotes.reduce((sum, q) => sum + (q.total || 0) - (q.total_operational_expenses || 0), 0),
     };
   });
 
