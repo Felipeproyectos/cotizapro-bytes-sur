@@ -26,7 +26,7 @@ export default function QuotePDF({ quote, onClose }) {
   const statusColor = STATUS_COLORS[quote.status] || "#94a3b8";
 
   const totalAbonos = (quote.abonos || []).reduce((s, a) => s + (a.monto || 0), 0);
-  const saldoPendiente = (quote.total || 0) - totalAbonos;
+  const saldoPendiente = ((quote.total_client || quote.total) || 0) - totalAbonos;
   const paymentType = quote.payment_type || (quote.include_iva ? "Con IVA (19%)" : "Sin IVA");
   const isHonorarios = paymentType === "Boleta de Honorarios";
   const retencion = isHonorarios ? Math.round((quote.subtotal || 0) * 0.1075) : 0;
@@ -34,6 +34,10 @@ export default function QuotePDF({ quote, onClose }) {
   const discount_amount = quote.discount_amount || 0;
   const discount_percent = quote.discount_percent || 0;
   const isMensual = quote.billing_type === "Mensual";
+  const operationalItems = (quote.items || []).filter(i => i.is_operational_expense);
+  const operational_expenses_total = quote.operational_expenses_total || operationalItems.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
+  const regularItems = (quote.items || []).filter(i => !i.is_operational_expense);
+  const total_client = quote.total_client || (quote.total || 0) + operational_expenses_total;
 
   const handlePrint = () => {
     const html = `<!DOCTYPE html>
@@ -129,7 +133,7 @@ export default function QuotePDF({ quote, onClose }) {
       </tr>
     </thead>
     <tbody>
-      ${(quote.items || []).map(item => `
+      ${(regularItems).map(item => `
       <tr>
         <td class="bold">
           ${item.service_name || item.description}
@@ -141,6 +145,33 @@ export default function QuotePDF({ quote, onClose }) {
       </tr>`).join("")}
     </tbody>
   </table>
+${operationalItems.length > 0 ? `
+<div class="section" style="margin-top:0">
+  <div class="section-title" style="color:#e67e22">Gastos Operacionales</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Descripción</th>
+        <th class="center">Cant.</th>
+        <th class="right">P. Unit.</th>
+        <th class="right">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${operationalItems.map(item => `
+      <tr>
+        <td class="bold">
+          ${item.service_name || item.description}
+          ${item.service_name && item.description ? `<div class="sub">${item.description}</div>` : ""}
+        </td>
+        <td class="center">${item.quantity}</td>
+        <td class="right">${isUF ? `${(item.unit_price_uf || 0).toFixed(2)} UF` : formatCLP(item.unit_price)}</td>
+        <td class="right bold">${isUF ? `${(item.total_uf || 0).toFixed(2)} UF` : formatCLP(item.total)}</td>
+      </tr>`).join("")}
+    </tbody>
+  </table>
+  <div style="text-align:right;font-size:11px;color:#888;margin-top:4px;font-style:italic;">* Estos gastos son recuperados por el prestador y no constituyen ingreso neto.</div>
+</div>` : ""}
   <div class="totals">
     <div class="totals-box">
       <div class="total-row"><span>Subtotal</span><span>${isUF ? `${(quote.subtotal_uf || 0).toFixed(2)} UF` : `$${Math.round(quote.subtotal || 0).toLocaleString("es-CL")}`}</span></div>
@@ -151,8 +182,9 @@ export default function QuotePDF({ quote, onClose }) {
         <div class="total-row"><span>Retención (10,75%)</span><span class="red">-$${Math.round(retencion).toLocaleString("es-CL")}</span></div>
         <div class="total-row"><span>Líquido a pagar</span><span>$${Math.round(liquidoHonorarios).toLocaleString("es-CL")}</span></div>
       ` : ""}
-      <div class="total-row final"><span>Total${isMensual ? " mensual" : ""}</span><span>${isUF ? `${(quote.total_uf || 0).toFixed(2)} UF` : `$${Math.round(quote.total || 0).toLocaleString("es-CL")}`}</span></div>
-      ${isUF ? `<div class="total-note">≈ $${Math.round(quote.total || 0).toLocaleString("es-CL")} CLP</div>` : ""}
+      ${operational_expenses_total > 0 ? `<div class="total-row" style="color:#e67e22"><span>Gastos Operacionales</span><span>${isUF ? Math.round(operational_expenses_total / ufVal * 100) / 100 + " UF" : formatCLP(operational_expenses_total)}</span></div>` : ""}
+            <div class="total-row final"><span>Total${isMensual ? " mensual" : ""}</span><span>${isUF ? `${(total_client_uf || 0).toFixed(2)} UF` : `$${Math.round(total_client || 0).toLocaleString("es-CL")}`}</span></div>
+      ${isUF ? `<div class="total-note">≈ $${Math.round(total_client || 0).toLocaleString("es-CL")} CLP</div>` : ""}
       ${paymentType === "Sin IVA" ? `<div class="total-note">* Precio no incluye IVA</div>` : ""}
     </div>
   </div>
@@ -164,7 +196,7 @@ ${isMensual ? `
   <div class="grid2">
     <div><div class="field-label">Tipo de cobro</div><div class="field-value" style="color:#7c3aed;font-weight:700;">🔄 Mensual recurrente</div></div>
     <div><div class="field-label">Día de cobro</div><div class="field-value">Día ${quote.billing_day || "—"} de cada mes</div></div>
-    <div><div class="field-label">Monto mensual</div><div class="field-value">$${Math.round(quote.total || 0).toLocaleString("es-CL")}</div></div>
+    <div><div class="field-label">Monto mensual</div><div class="field-value">$${Math.round(total_client || 0).toLocaleString("es-CL")}</div></div>
   </div>
 </div>` : ""}
 
