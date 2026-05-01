@@ -41,6 +41,8 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
     discount_amount: 0,
     discount_percent: 0,
     subtotal: 0,
+    operational_expenses_total: 0,
+    total_client: 0,
     subtotal_after_discount: 0,
     iva_amount: 0,
     total: 0,
@@ -105,7 +107,10 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
     const iva_amount = include_iva ? subtotal_after_discount * IVA_RATE : 0;
     const total = subtotal_after_discount + iva_amount;
     const total_uf = f.currency === "UF" ? total / ufVal : null;
-    setForm({ ...f, subtotal, subtotal_uf, discount_amount, discount_percent, subtotal_after_discount, iva_amount, total, total_uf, include_iva });
+    const operationalItems = f.items.filter(i => i.is_operational_expense);
+    const operational_expenses_total = operationalItems.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
+    const total_client = total + operational_expenses_total;
+    setForm({ ...f, subtotal, subtotal_uf, discount_amount, discount_percent, subtotal_after_discount, iva_amount, total, total_uf, include_iva, operational_expenses_total, total_client });
   };
 
   const updateItem = (idx, field, val) => {
