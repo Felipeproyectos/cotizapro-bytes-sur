@@ -35,7 +35,7 @@ export default function QuotePDF({ quote, onClose }) {
   const discount_percent = quote.discount_percent || 0;
   const isMensual = quote.billing_type === "Mensual";
   const operationalItems = (quote.items || []).filter(i => i.is_operational_expense);
-  const operational_expenses_total = quote.operational_expenses_total || operationalItems.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
+  const operational_expenses_total = quote.total_operational_expenses || operationalItems.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
   const regularItems = (quote.items || []).filter(i => !i.is_operational_expense);
   const total_client = quote.total_client || (quote.total || 0) + operational_expenses_total;
 
