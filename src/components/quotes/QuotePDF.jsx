@@ -26,7 +26,7 @@ export default function QuotePDF({ quote, onClose }) {
   const statusColor = STATUS_COLORS[quote.status] || "#94a3b8";
 
   const totalAbonos = (quote.abonos || []).reduce((s, a) => s + (a.monto || 0), 0);
-  const saldoPendiente = ((quote.quote.total || quote.total) || 0) - totalAbonos;
+  const saldoPendiente = (quote.total_client || quote.total || 0) - totalAbonos;
   const paymentType = quote.payment_type || (quote.include_iva ? "Con IVA (19%)" : "Sin IVA");
   const isHonorarios = paymentType === "Boleta de Honorarios";
   const retencion = isHonorarios ? Math.round((quote.subtotal || 0) * 0.1075) : 0;
@@ -37,7 +37,7 @@ export default function QuotePDF({ quote, onClose }) {
   const operationalItems = (quote.items || []).filter(i => i.is_operational_expense);
   const operational_expenses_total = quote.operational_expenses_total || operationalItems.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
   const regularItems = (quote.items || []).filter(i => !i.is_operational_expense);
-  const total_client = quote.quote.total || (quote.total || 0) + operational_expenses_total;
+  const total_client = quote.total_client || (quote.total || 0) + operational_expenses_total;
 
   const handlePrint = () => {
     const html = `<!DOCTYPE html>
@@ -133,7 +133,7 @@ export default function QuotePDF({ quote, onClose }) {
       </tr>
     </thead>
     <tbody>
-      ${(quote.items || []).map(item => `
+        ${(quote.items || []).filter(item => !item.is_operational_expense).map(item => `
       <tr>
         <td class="bold">
           ${item.service_name || item.description}
@@ -145,6 +145,33 @@ export default function QuotePDF({ quote, onClose }) {
       </tr>`).join("")}
     </tbody>
   </table>
+${operationalItems.length > 0 ? `
+<div class="section" style="margin-top:10px;">
+  <div class="section-title" style="background:#f0f4ff;color:#1e40af;">Materiales / Repuestos</div>
+  <table>
+    <thead>
+      <tr>
+        <th>Descripción</th>
+        <th class="center">Cant.</th>
+        <th class="right">P. Unit.</th>
+        <th class="right">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${operationalItems.map(item => `
+      <tr>
+        <td class="bold">
+          ${item.service_name || item.description}
+          ${item.service_name && item.description ? `<div class="sub">${item.description}</div>` : ""}
+        </td>
+        <td class="center">${item.quantity}</td>
+        <td class="right">${isUF ? `${(item.unit_price_uf || 0).toFixed(2)} UF` : `$$${Math.round(item.unit_price || 0).toLocaleString("es-CL")}`}</td>
+        <td class="right bold">${isUF ? `${(item.total_uf || 0).toFixed(2)} UF` : `$$${Math.round(item.total || 0).toLocaleString("es-CL")}`}</td>
+      </tr>`).join("")}
+    </tbody>
+  </table>
+</div>
+` : ""}
   <div class="totals">
     <div class="totals-box">
       <div class="total-row"><span>Subtotal</span><span>${isUF ? `${(quote.subtotal_uf || 0).toFixed(2)} UF` : `$${Math.round(quote.subtotal || 0).toLocaleString("es-CL")}`}</span></div>
@@ -158,6 +185,16 @@ export default function QuotePDF({ quote, onClose }) {
             <div class="total-row final"><span>Total${isMensual ? " mensual" : ""}</span><span>${isUF ? `${((quote.total / ufVal) || 0).toFixed(2)} UF` : `$${Math.round(quote.total || 0).toLocaleString("es-CL")}`}</span></div>
       ${isUF ? `<div class="total-note">≈ $${Math.round(quote.total || 0).toLocaleString("es-CL")} CLP</div>` : ""}
       ${paymentType === "Sin IVA" ? `<div class="total-note">* Precio no incluye IVA</div>` : ""}
+          ${operational_expenses_total > 0 ? `
+            <div class="total-row" style="border-top:1px dashed #e2e8f0;margin-top:4px;padding-top:4px;">
+              <span style="color:#1e40af;font-weight:600;">Materiales / Repuestos</span>
+              <span style="font-weight:600;color:#1e40af;">${isUF ? `${(operational_expenses_total / ufVal).toFixed(2)} UF` : `$$${Math.round(operational_expenses_total).toLocaleString("es-CL")}`}</span>
+            </div>
+            <div class="total-row final" style="background:#eef2ff;">
+              <span style="color:#1e3a8a;font-weight:700;">Total a Pagar</span>
+              <span style="font-weight:700;color:#1e3a8a;">${isUF ? `${(total_client / ufVal).toFixed(2)} UF` : `$$${Math.round(total_client).toLocaleString("es-CL")}`}</span>
+            </div>
+          ` : ""}
     </div>
   </div>
 </div>
@@ -369,7 +406,7 @@ ${quote.notes ? `
                 </tr>
               </thead>
               <tbody>
-                {(quote.items || []).map((item, idx) => (
+              {(quote.items || []).filter(item => !item.is_operational_expense).map((item, idx) => (
                   <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
                     <td className="py-3 px-3">
                       <p className="font-medium text-slate-900">{item.service_name || item.description}</p>
@@ -382,6 +419,36 @@ ${quote.notes ? `
                 ))}
               </tbody>
             </table>
+
+          {/* Materiales / Repuestos */}
+          {operationalItems.length > 0 && (
+            <div className="px-10 py-4" style={{ marginTop: "8px" }}>
+              <p className="text-xs font-semibold text-blue-800 uppercase tracking-widest mb-3" style={{ background: "#eef2ff", padding: "6px 10px", borderRadius: "4px" }}>Materiales / Repuestos</p>
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr style={{ background: "#f0f4ff" }}>
+                    <th className="text-left py-2 px-3 text-xs font-semibold text-blue-700">Descripción</th>
+                    <th className="text-center py-2 px-3 text-xs font-semibold text-blue-700">Cant.</th>
+                    <th className="text-right py-2 px-3 text-xs font-semibold text-blue-700">P. Unit.</th>
+                    <th className="text-right py-2 px-3 text-xs font-semibold text-blue-700">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {operationalItems.map((item, idx) => (
+                    <tr key={idx} style={{ borderBottom: "1px solid #e0e7ff" }}>
+                      <td className="py-3 px-3">
+                        <p className="font-medium text-slate-900">{item.service_name || item.description}</p>
+                        {item.service_name && item.description && <p className="text-xs text-slate-400 mt-0.5">{item.description}</p>}
+                      </td>
+                      <td className="py-3 px-3 text-center text-slate-600">{item.quantity}</td>
+                      <td className="py-3 px-3 text-right text-slate-600">{isUF ? `${(item.unit_price_uf || 0).toFixed(2)} UF` : formatCLP(item.unit_price || 0)}</td>
+                      <td className="py-3 px-3 text-right font-semibold text-slate-900">{isUF ? `${(item.total_uf || 0).toFixed(2)} UF` : formatCLP(item.total || 0)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
             {/* Totals */}
             <div className="mt-5 flex justify-end">
@@ -425,6 +492,18 @@ ${quote.notes ? `
                 {paymentType === "Sin IVA" && (
                   <p className="text-xs text-slate-400">* Precio no incluye IVA</p>
                 )}
+          {operational_expenses_total > 0 && (
+            <>
+              <div className="flex justify-between text-sm" style={{ borderTop: "1px dashed #e0e7ff", paddingTop: "6px", marginTop: "4px" }}>
+                <span className="text-blue-700 font-semibold">Materiales / Repuestos</span>
+                <span className="font-semibold text-blue-700">{isUF ? `${(operational_expenses_total / ufVal).toFixed(2)} UF` : formatCLP(operational_expenses_total)}</span>
+              </div>
+              <div className="flex justify-between pt-2 border-t border-blue-200" style={{ background: "#eef2ff", padding: "8px", borderRadius: "4px", marginTop: "4px" }}>
+                <span className="font-bold text-blue-900">Total a Pagar</span>
+                <span className="font-bold text-blue-900">{isUF ? `${(total_client / ufVal).toFixed(2)} UF` : formatCLP(total_client)}</span>
+              </div>
+            </>
+          )}
               </div>
             </div>
           </div>
