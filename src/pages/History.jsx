@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { CheckCircle, Clock, Search, Download, ArrowUpRight, Trash2, FileDown } from "lucide-react";
+import { CheckCircle, Clock, Search, Download, ArrowUpRight, Trash2, FileDown, Pencil, X } from "lucide-react";
 import QuotePDF from "../components/quotes/QuotePDF";
+import QuoteForm from "../components/quotes/QuoteForm";
 
 const STATUS_COLORS = {
   Borrador: { bg: "#94a3b820", text: "#94a3b8" },
@@ -21,17 +22,19 @@ export default function History() {
 
   const [tab, setTab] = useState("activas"); // activas | eliminadas
   const [deleted, setDeleted] = useState([]);
+  const [editingQuote, setEditingQuote] = useState(null);
 
-  useEffect(() => {
+  const loadQuotes = () => {
     base44.entities.Quote.list("-created_date").then(data => {
       setQuotes(data.filter(q => q.status === "Ejecutada" || q.status === "Aceptada"));
       setLoading(false);
     });
-    // Load all quotes to find "deleted" ones - we track them via a special status
     base44.entities.Quote.filter({ status: "Rechazada" }, "-created_date").then(data => {
       setDeleted(data);
     });
-  }, []);
+  };
+
+  useEffect(() => { loadQuotes(); }, []);
 
   const formatCLP = (n) => `$${Math.round(n || 0).toLocaleString("es-CL")}`;
 
@@ -90,6 +93,27 @@ export default function History() {
   return (
     <div className="min-h-screen bg-gray-50 p-6 md:p-8">
       {pdfQuote && <QuotePDF quote={pdfQuote} onClose={() => setPdfQuote(null)} />}
+
+      {/* Modal de edición */}
+      {editingQuote && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-start justify-center overflow-y-auto py-6 px-4">
+          <div className="bg-gray-50 rounded-2xl w-full max-w-3xl shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white rounded-t-2xl">
+              <h2 className="text-base font-semibold text-slate-900">Editar Cotización — {editingQuote.quote_number}</h2>
+              <button onClick={() => setEditingQuote(null)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X className="w-4 h-4 text-slate-500" />
+              </button>
+            </div>
+            <div className="p-6">
+              <QuoteForm
+                quote={editingQuote}
+                onSave={() => { setEditingQuote(null); loadQuotes(); }}
+                onCancel={() => setEditingQuote(null)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-8">
@@ -222,11 +246,14 @@ export default function History() {
                             {q.include_iva && <p className="text-xs text-slate-400">IVA incluido</p>}
                           </div>
                           <button onClick={() => setPdfQuote(q)} className="p-2 hover:bg-gray-100 rounded-lg shrink-0" title="Ver PDF">
-                            <Download className="w-4 h-4 text-slate-400" />
-                          </button>
-                        </div>
-                      );
-                    })}
+                             <Download className="w-4 h-4 text-slate-400" />
+                           </button>
+                           <button onClick={() => setEditingQuote(q)} className="p-2 hover:bg-blue-50 rounded-lg shrink-0" title="Editar">
+                             <Pencil className="w-4 h-4 text-blue-400" />
+                           </button>
+                          </div>
+                          );
+                          })}
                   </div>
                 </div>
               ))}
