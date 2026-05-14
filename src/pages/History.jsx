@@ -114,7 +114,7 @@ export default function History() {
         </div>
 
         {/* Summary */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <div className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-4">
             <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
               <CheckCircle className="w-5 h-5 text-emerald-500" />
@@ -129,8 +129,20 @@ export default function History() {
               <ArrowUpRight className="w-5 h-5 text-violet-500" />
             </div>
             <div>
-              <p className="text-xs text-slate-400 font-medium">Ingresos totales</p>
-              <p className="text-xl font-bold text-slate-900">{formatCLP(totalRevenue)}</p>
+              <p className="text-xs text-slate-400 font-medium">Facturado al cliente</p>
+              <p className="text-xl font-bold text-slate-900">{formatCLP(filtered.reduce((s, q) => s + (q.total || 0), 0))}</p>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl border border-emerald-100 p-5 flex items-center gap-4">
+            <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
+              <ArrowUpRight className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-xs text-slate-400 font-medium">Ingreso neto (sin gastos op.)</p>
+              <p className="text-xl font-bold text-emerald-700">{formatCLP(totalRevenue)}</p>
+              {filtered.some(q => q.total_operational_expenses > 0) && (
+                <p className="text-xs text-red-400 mt-0.5">-{formatCLP(filtered.reduce((s, q) => s + (q.total_operational_expenses || 0), 0))} en gastos op.</p>
+              )}
             </div>
           </div>
         </div>
@@ -198,9 +210,14 @@ export default function History() {
                             </div>
                           </div>
                           <div className="text-right shrink-0">
-                            <p className="text-sm font-bold text-slate-900">{formatCLP(getNetIncome(q))}</p>
-                            {q.total_operational_expenses > 0 && (
-                              <p className="text-xs text-slate-400">-{formatCLP(q.total_operational_expenses)} op.</p>
+                            {q.total_operational_expenses > 0 ? (
+                              <>
+                                <p className="text-sm font-bold text-emerald-700">{formatCLP(getNetIncome(q))}</p>
+                                <p className="text-xs text-slate-400 line-through">{formatCLP(q.total)}</p>
+                                <p className="text-xs text-red-400">-{formatCLP(q.total_operational_expenses)} op.</p>
+                              </>
+                            ) : (
+                              <p className="text-sm font-bold text-slate-900">{formatCLP(q.total)}</p>
                             )}
                             {q.include_iva && <p className="text-xs text-slate-400">IVA incluido</p>}
                           </div>
