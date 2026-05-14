@@ -155,6 +155,7 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
   };
 
   const addItem = () => setForm(f => ({ ...f, items: [...f.items, { ...emptyItem }] }));
+  const addOpItem = () => setForm(f => ({ ...f, items: [...f.items, { ...emptyItem, is_operational_expense: true }] }));
   const removeItem = (idx) => {
     const items = form.items.filter((_, i) => i !== idx);
     recalc({ ...form, items });
@@ -408,9 +409,14 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-slate-900">Servicios / Ítems</h2>
-          <button onClick={addItem} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50">
-            <Plus className="w-3.5 h-3.5" /> Agregar ítem
-          </button>
+          <div className="flex gap-2">
+            <button onClick={addOpItem} className="flex items-center gap-1.5 text-xs text-orange-500 hover:text-orange-700 border border-orange-200 px-3 py-1.5 rounded-lg hover:bg-orange-50">
+              <Plus className="w-3.5 h-3.5" /> Gasto Operacional
+            </button>
+            <button onClick={addItem} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50">
+              <Plus className="w-3.5 h-3.5" /> Agregar ítem
+            </button>
+          </div>
         </div>
         <div className="space-y-3">
           {form.items.map((item, idx) => (
