@@ -1,0 +1,46 @@
+{
+  "name": "OperationalExpense",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha del gasto"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Materiales",
+        "Herramientas",
+        "Transporte",
+        "Arriendo",
+        "Servicios",
+        "Sueldos",
+        "Software",
+        "Otros"
+      ],
+      "description": "Categor\u00eda del gasto"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descripci\u00f3n del gasto"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Monto en CLP"
+    },
+    "supplier": {
+      "type": "string",
+      "description": "Proveedor o destino del gasto"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notas adicionales"
+    }
+  },
+  "required": [
+    "date",
+    "description",
+    "amount"
+  ]
+}
