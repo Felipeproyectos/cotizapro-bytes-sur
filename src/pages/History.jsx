@@ -32,12 +32,19 @@ export default function History() {
     });
     const opItems = (quote.items || []).filter(i => i.is_operational_expense);
     const toCreate = [];
+    const toUpdate = [];
     for (const item of opItems) {
       const desc = item.service_name || item.description || "Sin nombre";
       const key = `${quote.id}__${desc}`;
-      if (!existingByKey[key]) {
+      const baseDate = (quote.executed_date || quote.created_date || format(new Date(), "yyyy-MM-dd")).substring(0, 10);
+      if (existingByKey[key]) {
+        // Actualizar monto si cambió
+        if (existingByKey[key].amount !== (item.total || 0)) {
+          toUpdate.push({ id: existingByKey[key].id, amount: item.total || 0 });
+        }
+      } else {
         toCreate.push({
-          date: (quote.executed_date || quote.created_date || format(new Date(), "yyyy-MM-dd")).substring(0, 10),
+          date: baseDate,
           category: item.category || "Materiales",
           description: desc,
           amount: item.total || 0,
@@ -51,9 +58,17 @@ export default function History() {
         });
       }
     }
-    if (toCreate.length > 0) {
-      await base44.entities.OperationalExpense.bulkCreate(toCreate);
+    // Eliminar registros vinculados que ya no están en la cotización
+    const currentDescs = new Set(opItems.map(i => i.service_name || i.description || "Sin nombre"));
+    for (const e of existing) {
+      if (e.quote_id === quote.id && !currentDescs.has(e.description)) {
+        await base44.entities.OperationalExpense.delete(e.id);
+      }
     }
+    await Promise.all([
+      toCreate.length > 0 ? base44.entities.OperationalExpense.bulkCreate(toCreate) : Promise.resolve(),
+      ...toUpdate.map(u => base44.entities.OperationalExpense.update(u.id, { amount: u.amount })),
+    ]);
   };
 
   const loadQuotes = () => {

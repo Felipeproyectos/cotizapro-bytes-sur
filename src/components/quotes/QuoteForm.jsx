@@ -97,9 +97,10 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
 
   const recalc = (f) => {
     const ufVal = parseFloat(f.uf_value) || 1;
-    // Todos los ítems suman al subtotal (operacionales también se cobran al cliente)
-    const subtotal = f.items.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
-    const subtotal_uf = f.currency === "UF" ? f.items.reduce((sum, i) => sum + (parseFloat(i.total_uf) || 0), 0) : null;
+    // Solo ítems regulares suman al subtotal del cliente
+    const regularItems = f.items.filter(i => !i.is_operational_expense);
+    const subtotal = regularItems.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
+    const subtotal_uf = f.currency === "UF" ? regularItems.reduce((sum, i) => sum + (parseFloat(i.total_uf) || 0), 0) : null;
     const discount_amount = parseFloat(f.discount_amount) || 0;
     const discount_percent = subtotal > 0 ? (discount_amount / subtotal) * 100 : 0;
     const subtotal_after_discount = subtotal - discount_amount;
@@ -179,7 +180,10 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
 
   const handleSave = async () => {
     setSaving(true);
+    // Separar ítems regulares y operacionales
     const regularItems = form.items.filter(i => !i.is_operational_expense);
+    const operationalItemsSave = form.items.filter(i => i.is_operational_expense);
+    // Calcular totales solo sobre ítems regulares (los operacionales son internos)
     const subtotal = regularItems.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
     const discount_amount = parseFloat(form.discount_amount) || 0;
     const discount_percent = subtotal > 0 ? (discount_amount / subtotal) * 100 : 0;
@@ -187,7 +191,6 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
     const include_iva = form.payment_type === "Con IVA (19%)";
     const iva_amount = include_iva ? subtotal_after_discount * IVA_RATE : 0;
     const total = subtotal_after_discount + iva_amount;
-    const operationalItemsSave = form.items.filter(i => i.is_operational_expense);
     const operational_expenses_total = operationalItemsSave.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
     const total_client = total;
     const payload = { ...form, subtotal, discount_amount, discount_percent, subtotal_after_discount, iva_amount, total, include_iva, operational_expenses_total, total_client, payment_options: form.payment_options || [] };
@@ -231,9 +234,10 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
   const ufVal = parseFloat(form.uf_value) || 1;
 
   const opItems = form.items.filter(i => i.is_operational_expense);
-  // Todos los ítems suman al total del cliente
-  const subtotal = form.items.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
-  const subtotal_uf = isUF ? form.items.reduce((sum, i) => sum + (parseFloat(i.total_uf) || 0), 0) : 0;
+  const regularDisplayItems = form.items.filter(i => !i.is_operational_expense);
+  // Solo ítems regulares suman al total del cliente
+  const subtotal = regularDisplayItems.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
+  const subtotal_uf = isUF ? regularDisplayItems.reduce((sum, i) => sum + (parseFloat(i.total_uf) || 0), 0) : 0;
   const totalGastosOp = opItems.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
   const discount_amount = parseFloat(form.discount_amount) || 0;
   const discount_percent = subtotal > 0 ? (discount_amount / subtotal) * 100 : 0;
