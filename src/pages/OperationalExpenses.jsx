@@ -1,19 +1,11 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { TrendingDown, Calendar, FileText, DollarSign, Search, Plus, X, Trash2 } from "lucide-react";
+import { TrendingDown, Calendar, FileText, DollarSign, Search, Plus, X, Trash2, CheckCircle, RefreshCw, Clock } from "lucide-react";
 import { format } from "date-fns";
 
 const formatCLP = (amount) => {
   if (!amount && amount !== 0) return "$0";
   return new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", minimumFractionDigits: 0 }).format(amount);
-};
-
-const STATUS_COLORS = {
-  Borrador: { bg: "#94a3b820", text: "#94a3b8" },
-  Enviada: { bg: "#3b82f620", text: "#3b82f6" },
-  Aceptada: { bg: "#10b98120", text: "#10b981" },
-  Rechazada: { bg: "#ef444420", text: "#ef4444" },
-  Ejecutada: { bg: "#8b5cf620", text: "#8b5cf6" },
 };
 
 const CATEGORIES = ["Materiales", "Herramientas", "Transporte", "Arriendo", "Servicios", "Sueldos", "Software", "Otros"];
@@ -36,6 +28,9 @@ const emptyForm = {
   amount: "",
   supplier: "",
   notes: "",
+  is_recurring: false,
+  recurrence_day: 1,
+  is_paid: false,
 };
 
 export default function OperationalExpenses() {
@@ -44,6 +39,7 @@ export default function OperationalExpenses() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterMonth, setFilterMonth] = useState("");
+  const [filterTab, setFilterTab] = useState("todos"); // todos | pendientes | pagados | recurrentes
   const [showModal, setShowModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -61,7 +57,6 @@ export default function OperationalExpenses() {
 
   useEffect(() => { load(); }, []);
 
-  // Gastos desde cotizaciones
   const quoteExpenses = quotes.flatMap((quote) => {
     const opItems = (quote.items || []).filter((item) => item.is_operational_expense);
     return opItems.map((item) => ({
@@ -75,10 +70,11 @@ export default function OperationalExpenses() {
       quoteTitle: quote.title || "Sin título",
       clientName: quote.client_name,
       quoteStatus: quote.status,
+      is_paid: true, // los de cotización se consideran ejecutados
+      is_recurring: false,
     }));
   });
 
-  // Unir todos los gastos
   const allExpenses = [
     ...directExpenses.map(e => ({ ...e, type: "direct" })),
     ...quoteExpenses,
@@ -93,12 +89,19 @@ export default function OperationalExpenses() {
       exp.category?.toLowerCase().includes(search.toLowerCase());
     const dateStr = exp.date ? exp.date.substring(0, 7) : "";
     const matchMonth = !filterMonth || dateStr === filterMonth;
-    return matchSearch && matchMonth;
+
+    let matchTab = true;
+    if (filterTab === "pendientes") matchTab = !exp.is_paid;
+    else if (filterTab === "pagados") matchTab = !!exp.is_paid;
+    else if (filterTab === "recurrentes") matchTab = !!exp.is_recurring;
+
+    return matchSearch && matchMonth && matchTab;
   });
 
   const totalGastos = filtered.reduce((sum, exp) => sum + (exp.amount || 0), 0);
-  const totalDirectos = filtered.filter(e => e.type === "direct").reduce((sum, e) => sum + (e.amount || 0), 0);
-  const totalCotizaciones = filtered.filter(e => e.type === "quote").reduce((sum, e) => sum + (e.amount || 0), 0);
+  const pendientesCount = allExpenses.filter(e => !e.is_paid && e.type === "direct").length;
+  const pendientesTotal = allExpenses.filter(e => !e.is_paid && e.type === "direct").reduce((s, e) => s + (e.amount || 0), 0);
+  const recurrentesTotal = directExpenses.filter(e => e.is_recurring).reduce((s, e) => s + (e.amount || 0), 0);
 
   const openNew = () => {
     setEditingExpense(null);
@@ -108,14 +111,28 @@ export default function OperationalExpenses() {
 
   const openEdit = (expense) => {
     setEditingExpense(expense);
-    setForm({ date: expense.date || "", category: expense.category || "Otros", description: expense.description || "", amount: expense.amount || "", supplier: expense.supplier || "", notes: expense.notes || "" });
+    setForm({
+      date: expense.date || "",
+      category: expense.category || "Otros",
+      description: expense.description || "",
+      amount: expense.amount || "",
+      supplier: expense.supplier || "",
+      notes: expense.notes || "",
+      is_recurring: expense.is_recurring || false,
+      recurrence_day: expense.recurrence_day || 1,
+      is_paid: expense.is_paid || false,
+    });
     setShowModal(true);
   };
 
   const handleSave = async () => {
     if (!form.description || !form.amount) return;
     setSaving(true);
-    const payload = { ...form, amount: parseFloat(form.amount) || 0 };
+    const payload = {
+      ...form,
+      amount: parseFloat(form.amount) || 0,
+      recurrence_day: form.is_recurring ? (parseInt(form.recurrence_day) || 1) : null,
+    };
     if (editingExpense?.id) {
       await base44.entities.OperationalExpense.update(editingExpense.id, payload);
     } else {
@@ -123,6 +140,19 @@ export default function OperationalExpenses() {
     }
     setSaving(false);
     setShowModal(false);
+    load();
+  };
+
+  const handleMarkPaid = async (exp) => {
+    await base44.entities.OperationalExpense.update(exp.id, {
+      is_paid: true,
+      paid_date: format(new Date(), "yyyy-MM-dd"),
+    });
+    load();
+  };
+
+  const handleMarkUnpaid = async (exp) => {
+    await base44.entities.OperationalExpense.update(exp.id, { is_paid: false, paid_date: null });
     load();
   };
 
@@ -139,6 +169,13 @@ export default function OperationalExpenses() {
       </div>
     );
   }
+
+  const TABS = [
+    { key: "todos", label: "Todos" },
+    { key: "pendientes", label: `Pendientes (${pendientesCount})` },
+    { key: "pagados", label: "Pagados" },
+    { key: "recurrentes", label: "Recurrentes" },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -171,34 +208,44 @@ export default function OperationalExpenses() {
               <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center">
                 <DollarSign className="w-4 h-4 text-red-500" />
               </div>
-              <p className="text-sm text-slate-500 font-medium">Total Gastos</p>
+              <p className="text-sm text-slate-500 font-medium">Total (filtrado)</p>
             </div>
             <p className="text-2xl font-bold text-red-600">{formatCLP(totalGastos)}</p>
             <p className="text-xs text-slate-400 mt-1">{filtered.length} registros</p>
           </div>
-          <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+          <div className="bg-white rounded-2xl border border-orange-100 p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
               <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center">
-                <TrendingDown className="w-4 h-4 text-orange-500" />
+                <Clock className="w-4 h-4 text-orange-500" />
               </div>
-              <p className="text-sm text-slate-500 font-medium">Gastos Directos</p>
+              <p className="text-sm text-slate-500 font-medium">Por Pagar</p>
             </div>
-            <p className="text-2xl font-bold text-slate-900">{formatCLP(totalDirectos)}</p>
-            <p className="text-xs text-slate-400 mt-1">{filtered.filter(e => e.type === "direct").length} registros</p>
+            <p className="text-2xl font-bold text-orange-600">{formatCLP(pendientesTotal)}</p>
+            <p className="text-xs text-slate-400 mt-1">{pendientesCount} gastos pendientes</p>
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
-                <FileText className="w-4 h-4 text-slate-500" />
+              <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center">
+                <RefreshCw className="w-4 h-4 text-indigo-500" />
               </div>
-              <p className="text-sm text-slate-500 font-medium">Desde Cotizaciones</p>
+              <p className="text-sm text-slate-500 font-medium">Recurrentes / Mes</p>
             </div>
-            <p className="text-2xl font-bold text-slate-900">{formatCLP(totalCotizaciones)}</p>
-            <p className="text-xs text-slate-400 mt-1">{filtered.filter(e => e.type === "quote").length} registros</p>
+            <p className="text-2xl font-bold text-indigo-600">{formatCLP(recurrentesTotal)}</p>
+            <p className="text-xs text-slate-400 mt-1">{directExpenses.filter(e => e.is_recurring).length} gastos fijos</p>
           </div>
         </div>
 
-        {/* Filtros */}
+        {/* Tabs filtro */}
+        <div className="flex gap-2 flex-wrap">
+          {TABS.map(t => (
+            <button key={t.key} onClick={() => setFilterTab(t.key)}
+              className={`px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${filterTab === t.key ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"}`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Filtros búsqueda + mes */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -227,8 +274,7 @@ export default function OperationalExpenses() {
             <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <TrendingDown className="w-6 h-6 text-slate-400" />
             </div>
-            <p className="text-slate-500 font-medium">No hay gastos registrados</p>
-            <p className="text-slate-400 text-sm mt-1">Usa el botón "Agregar Gasto" para registrar gastos directos</p>
+            <p className="text-slate-500 font-medium">No hay gastos en esta categoría</p>
             <button onClick={openNew} className="mt-4 flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-800 mx-auto">
               <Plus className="w-4 h-4" /> Agregar Gasto
             </button>
@@ -237,36 +283,57 @@ export default function OperationalExpenses() {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="divide-y divide-gray-50">
               {filtered.map((exp, idx) => {
-                const statusColor = STATUS_COLORS[exp.quoteStatus] || { bg: "#94a3b820", text: "#94a3b8" };
                 const catColor = CAT_COLORS[exp.category] || CAT_COLORS["Otros"];
+                const isPaid = !!exp.is_paid;
                 return (
-                  <div key={exp.id || idx} className="px-5 py-4 flex items-center justify-between gap-4 hover:bg-gray-50/50">
+                  <div key={exp.id || idx} className={`px-5 py-4 flex items-center justify-between gap-4 hover:bg-gray-50/50 ${isPaid ? "opacity-60" : ""}`}>
                     <div className="flex items-center gap-4 min-w-0 flex-1">
-                      <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <TrendingDown className="w-4 h-4 text-red-400" />
+                      {/* Indicador pagado/pendiente */}
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isPaid ? "bg-emerald-50" : "bg-orange-50"}`}>
+                        {isPaid
+                          ? <CheckCircle className="w-4 h-4 text-emerald-500" />
+                          : <Clock className="w-4 h-4 text-orange-400" />}
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-semibold text-slate-900 truncate">{exp.description}</p>
+                          <p className={`text-sm font-semibold truncate ${isPaid ? "text-slate-500 line-through" : "text-slate-900"}`}>{exp.description}</p>
                           <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${catColor}`}>{exp.category || "Otros"}</span>
+                          {exp.is_recurring && (
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 flex items-center gap-1">
+                              <RefreshCw className="w-2.5 h-2.5" /> Mensual{exp.recurrence_day ? ` (día ${exp.recurrence_day})` : ""}
+                            </span>
+                          )}
                           {exp.type === "quote" && (
-                            <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: statusColor.bg, color: statusColor.text }}>
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
                               Cot. #{exp.quoteNumber}
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-3 mt-0.5">
+                        <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                           {exp.supplier && <p className="text-xs text-slate-400">📦 {exp.supplier}</p>}
                           {exp.clientName && <p className="text-xs text-slate-400">👤 {exp.clientName}</p>}
                           {exp.date && <p className="text-xs text-slate-400">📅 {exp.date?.substring(0, 10)}</p>}
+                          {isPaid && exp.paid_date && <p className="text-xs text-emerald-500">✓ Pagado el {exp.paid_date}</p>}
                         </div>
                         {exp.notes && <p className="text-xs text-slate-400 mt-0.5 truncate">{exp.notes}</p>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <p className="text-base font-bold text-red-600">{formatCLP(exp.amount)}</p>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <p className={`text-base font-bold ${isPaid ? "text-slate-400" : "text-red-600"}`}>{formatCLP(exp.amount)}</p>
                       {exp.type === "direct" && (
                         <div className="flex gap-1">
+                          {/* Botón pagar/desmarcar */}
+                          {isPaid ? (
+                            <button onClick={() => handleMarkUnpaid(exp)} title="Marcar como pendiente"
+                              className="p-1.5 hover:bg-orange-50 rounded-lg text-emerald-400 hover:text-orange-500">
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <button onClick={() => handleMarkPaid(exp)} title="Marcar como pagado"
+                              className="p-1.5 hover:bg-emerald-50 rounded-lg text-slate-300 hover:text-emerald-500">
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                          )}
                           <button onClick={() => openEdit(exp)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600">
                             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                           </button>
@@ -329,6 +396,39 @@ export default function OperationalExpenses() {
                     placeholder="Ej: Easy, Sodimac..." />
                 </div>
               </div>
+
+              {/* Recurrente */}
+              <div className="border border-gray-100 rounded-xl p-3 space-y-3">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" checked={form.is_recurring}
+                    onChange={e => setForm(f => ({ ...f, is_recurring: e.target.checked }))}
+                    className="w-4 h-4 rounded border-gray-300" />
+                  <span className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
+                    <RefreshCw className="w-3.5 h-3.5 text-indigo-500" /> Gasto mensual recurrente
+                  </span>
+                </label>
+                {form.is_recurring && (
+                  <div className="flex items-center gap-3 ml-7">
+                    <label className="text-xs text-slate-500 whitespace-nowrap">Día de cobro:</label>
+                    <input type="number" min="1" max="28"
+                      className="w-20 border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                      value={form.recurrence_day || 1}
+                      onChange={e => setForm(f => ({ ...f, recurrence_day: parseInt(e.target.value) || 1 }))} />
+                    <span className="text-xs text-slate-400">de cada mes</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Pagado */}
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" checked={form.is_paid}
+                  onChange={e => setForm(f => ({ ...f, is_paid: e.target.checked }))}
+                  className="w-4 h-4 rounded border-gray-300" />
+                <span className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
+                  <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Ya fue pagado
+                </span>
+              </label>
+
               <div>
                 <label className="text-xs font-medium text-slate-500 mb-1.5 block">Notas</label>
                 <textarea className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10 resize-none"

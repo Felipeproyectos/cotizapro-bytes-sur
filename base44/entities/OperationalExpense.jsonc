@@ -36,6 +36,25 @@
     "notes": {
       "type": "string",
       "description": "Notas adicionales"
+    },
+    "is_recurring": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si es un gasto mensual recurrente"
+    },
+    "recurrence_day": {
+      "type": "number",
+      "description": "D\u00eda del mes en que se cobra (1-28)"
+    },
+    "is_paid": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si ya fue pagado"
+    },
+    "paid_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha en que se marc\u00f3 como pagado"
     }
   },
   "required": [
