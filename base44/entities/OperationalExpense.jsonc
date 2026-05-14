@@ -55,6 +55,18 @@
       "type": "string",
       "format": "date",
       "description": "Fecha en que se marc\u00f3 como pagado"
+    },
+    "quote_id": {
+      "type": "string",
+      "description": "ID de la cotizaci\u00f3n asociada (si viene de una cotizaci\u00f3n)"
+    },
+    "quote_number": {
+      "type": "string",
+      "description": "N\u00famero de cotizaci\u00f3n asociada"
+    },
+    "quote_client": {
+      "type": "string",
+      "description": "Nombre del cliente de la cotizaci\u00f3n"
     }
   },
   "required": [

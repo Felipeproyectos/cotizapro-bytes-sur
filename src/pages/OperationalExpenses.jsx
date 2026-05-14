@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { TrendingDown, Calendar, FileText, DollarSign, Search, Plus, X, Trash2, CheckCircle, RefreshCw, Clock } from "lucide-react";
+import { TrendingDown, Calendar, DollarSign, Search, Plus, X, Trash2, CheckCircle, RefreshCw, Clock, FileText, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 
 const formatCLP = (amount) => {
@@ -37,9 +37,10 @@ export default function OperationalExpenses() {
   const [quotes, setQuotes] = useState([]);
   const [directExpenses, setDirectExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [search, setSearch] = useState("");
   const [filterMonth, setFilterMonth] = useState("");
-  const [filterTab, setFilterTab] = useState("todos"); // todos | pendientes | pagados | recurrentes
+  const [filterTab, setFilterTab] = useState("todos");
   const [showModal, setShowModal] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
   const [form, setForm] = useState(emptyForm);
@@ -57,35 +58,59 @@ export default function OperationalExpenses() {
 
   useEffect(() => { load(); }, []);
 
-  const quoteExpenses = quotes.flatMap((quote) => {
-    const opItems = (quote.items || []).filter((item) => item.is_operational_expense);
-    return opItems.map((item) => ({
-      id: `q-${quote.id}-${item.service_name}`,
-      type: "quote",
-      date: quote.created_date || null,
-      description: item.service_name || item.description || "Sin nombre",
-      amount: item.total || 0,
-      category: "Materiales",
-      quoteNumber: quote.quote_number,
-      quoteTitle: quote.title || "Sin título",
-      clientName: quote.client_name,
-      quoteStatus: quote.status,
-      is_paid: true, // los de cotización se consideran ejecutados
-      is_recurring: false,
-    }));
-  });
+  // Sincronizar gastos de cotizaciones → crear/actualizar registros OperationalExpense vinculados
+  const syncQuoteExpenses = async () => {
+    setSyncing(true);
+    const expensesData = await base44.entities.OperationalExpense.list("-date");
+    const existingByKey = {};
+    expensesData.forEach(e => {
+      if (e.quote_id) existingByKey[`${e.quote_id}__${e.description}`] = e;
+    });
 
-  const allExpenses = [
-    ...directExpenses.map(e => ({ ...e, type: "direct" })),
-    ...quoteExpenses,
-  ];
+    const toCreate = [];
+    for (const quote of quotes) {
+      const opItems = (quote.items || []).filter(i => i.is_operational_expense);
+      for (const item of opItems) {
+        const desc = item.service_name || item.description || "Sin nombre";
+        const key = `${quote.id}__${desc}`;
+        if (!existingByKey[key]) {
+          toCreate.push({
+            date: (quote.executed_date || quote.created_date || format(new Date(), "yyyy-MM-dd")).substring(0, 10),
+            category: item.category || "Materiales",
+            description: desc,
+            amount: item.total || 0,
+            supplier: item.supplier || "",
+            notes: "",
+            is_recurring: false,
+            is_paid: false,
+            quote_id: quote.id,
+            quote_number: quote.quote_number || "",
+            quote_client: quote.client_name || "",
+          });
+        }
+      }
+    }
+
+    if (toCreate.length > 0) {
+      await base44.entities.OperationalExpense.bulkCreate(toCreate);
+    }
+    await load();
+    setSyncing(false);
+  };
+
+  // Separar gastos con y sin cotización
+  const quoteLinkedExpenses = directExpenses.filter(e => !!e.quote_id);
+  const pureDirectExpenses = directExpenses.filter(e => !e.quote_id);
+
+  const allExpenses = directExpenses; // todos son registros reales ahora
 
   const filtered = allExpenses.filter((exp) => {
     const matchSearch =
       !search ||
       exp.description?.toLowerCase().includes(search.toLowerCase()) ||
       exp.supplier?.toLowerCase().includes(search.toLowerCase()) ||
-      exp.clientName?.toLowerCase().includes(search.toLowerCase()) ||
+      exp.quote_client?.toLowerCase().includes(search.toLowerCase()) ||
+      exp.quote_number?.toLowerCase().includes(search.toLowerCase()) ||
       exp.category?.toLowerCase().includes(search.toLowerCase());
     const dateStr = exp.date ? exp.date.substring(0, 7) : "";
     const matchMonth = !filterMonth || dateStr === filterMonth;
@@ -94,14 +119,24 @@ export default function OperationalExpenses() {
     if (filterTab === "pendientes") matchTab = !exp.is_paid;
     else if (filterTab === "pagados") matchTab = !!exp.is_paid;
     else if (filterTab === "recurrentes") matchTab = !!exp.is_recurring;
+    else if (filterTab === "cotizaciones") matchTab = !!exp.quote_id;
 
     return matchSearch && matchMonth && matchTab;
   });
 
   const totalGastos = filtered.reduce((sum, exp) => sum + (exp.amount || 0), 0);
-  const pendientesCount = allExpenses.filter(e => !e.is_paid && e.type === "direct").length;
-  const pendientesTotal = allExpenses.filter(e => !e.is_paid && e.type === "direct").reduce((s, e) => s + (e.amount || 0), 0);
-  const recurrentesTotal = directExpenses.filter(e => e.is_recurring).reduce((s, e) => s + (e.amount || 0), 0);
+  const pendientesCount = allExpenses.filter(e => !e.is_paid).length;
+  const pendientesTotal = allExpenses.filter(e => !e.is_paid).reduce((s, e) => s + (e.amount || 0), 0);
+  const recurrentesTotal = allExpenses.filter(e => e.is_recurring).reduce((s, e) => s + (e.amount || 0), 0);
+
+  // Detectar gastos de cotizaciones que aún no están sincronizados
+  const unsyncedCount = quotes.reduce((count, quote) => {
+    const opItems = (quote.items || []).filter(i => i.is_operational_expense);
+    return count + opItems.filter(item => {
+      const desc = item.service_name || item.description || "Sin nombre";
+      return !quoteLinkedExpenses.some(e => e.quote_id === quote.id && e.description === desc);
+    }).length;
+  }, 0);
 
   const openNew = () => {
     setEditingExpense(null);
@@ -175,13 +210,14 @@ export default function OperationalExpenses() {
     { key: "pendientes", label: `Pendientes (${pendientesCount})` },
     { key: "pagados", label: "Pagados" },
     { key: "recurrentes", label: "Recurrentes" },
+    { key: "cotizaciones", label: `De Cotizaciones (${quoteLinkedExpenses.length})` },
   ];
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-6 py-5">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
               <TrendingDown className="w-4 h-4 text-red-600" />
@@ -191,12 +227,19 @@ export default function OperationalExpenses() {
               <p className="text-xs text-slate-500">Gastos directos e internos de la empresa</p>
             </div>
           </div>
-          <button
-            onClick={openNew}
-            className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800"
-          >
-            <Plus className="w-4 h-4" /> Agregar Gasto
-          </button>
+          <div className="flex items-center gap-2">
+            {unsyncedCount > 0 && (
+              <button onClick={syncQuoteExpenses} disabled={syncing}
+                className="flex items-center gap-2 border border-orange-300 text-orange-600 bg-orange-50 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-orange-100 disabled:opacity-50">
+                <AlertCircle className="w-4 h-4" />
+                {syncing ? "Sincronizando..." : `Importar ${unsyncedCount} de cotizaciones`}
+              </button>
+            )}
+            <button onClick={openNew}
+              className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800">
+              <Plus className="w-4 h-4" /> Agregar Gasto
+            </button>
+          </div>
         </div>
       </div>
 
@@ -231,7 +274,7 @@ export default function OperationalExpenses() {
               <p className="text-sm text-slate-500 font-medium">Recurrentes / Mes</p>
             </div>
             <p className="text-2xl font-bold text-indigo-600">{formatCLP(recurrentesTotal)}</p>
-            <p className="text-xs text-slate-400 mt-1">{directExpenses.filter(e => e.is_recurring).length} gastos fijos</p>
+            <p className="text-xs text-slate-400 mt-1">{allExpenses.filter(e => e.is_recurring).length} gastos fijos</p>
           </div>
         </div>
 
@@ -249,22 +292,14 @@ export default function OperationalExpenses() {
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Buscar por descripción, proveedor, categoría..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
-            />
+            <input type="text" placeholder="Buscar por descripción, cliente, proveedor, categoría..."
+              value={search} onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900" />
           </div>
           <div className="relative">
             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="month"
-              value={filterMonth}
-              onChange={(e) => setFilterMonth(e.target.value)}
-              className="pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
-            />
+            <input type="month" value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)}
+              className="pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900" />
           </div>
         </div>
 
@@ -275,6 +310,9 @@ export default function OperationalExpenses() {
               <TrendingDown className="w-6 h-6 text-slate-400" />
             </div>
             <p className="text-slate-500 font-medium">No hay gastos en esta categoría</p>
+            {unsyncedCount > 0 && (
+              <p className="text-xs text-orange-500 mt-2">Hay {unsyncedCount} gastos de cotizaciones sin importar</p>
+            )}
             <button onClick={openNew} className="mt-4 flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-800 mx-auto">
               <Plus className="w-4 h-4" /> Agregar Gasto
             </button>
@@ -285,6 +323,7 @@ export default function OperationalExpenses() {
               {filtered.map((exp, idx) => {
                 const catColor = CAT_COLORS[exp.category] || CAT_COLORS["Otros"];
                 const isPaid = !!exp.is_paid;
+                const isFromQuote = !!exp.quote_id;
                 return (
                   <div key={exp.id || idx} className={`px-5 py-4 flex items-center justify-between gap-4 hover:bg-gray-50/50 ${isPaid ? "opacity-60" : ""}`}>
                     <div className="flex items-center gap-4 min-w-0 flex-1">
@@ -296,52 +335,59 @@ export default function OperationalExpenses() {
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className={`text-sm font-semibold truncate ${isPaid ? "text-slate-500 line-through" : "text-slate-900"}`}>{exp.description}</p>
+                          <p className={`text-sm font-semibold truncate ${isPaid ? "text-slate-400 line-through" : "text-slate-900"}`}>
+                            {exp.description}
+                          </p>
                           <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${catColor}`}>{exp.category || "Otros"}</span>
+                          {isFromQuote && (
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 flex items-center gap-1">
+                              <FileText className="w-2.5 h-2.5" /> Cot. {exp.quote_number}
+                            </span>
+                          )}
                           {exp.is_recurring && (
                             <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 flex items-center gap-1">
                               <RefreshCw className="w-2.5 h-2.5" /> Mensual{exp.recurrence_day ? ` (día ${exp.recurrence_day})` : ""}
                             </span>
                           )}
-                          {exp.type === "quote" && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
-                              Cot. #{exp.quoteNumber}
-                            </span>
-                          )}
                         </div>
                         <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                          {isFromQuote && exp.quote_client && (
+                            <p className="text-xs font-medium text-violet-500">👤 {exp.quote_client}</p>
+                          )}
                           {exp.supplier && <p className="text-xs text-slate-400">📦 {exp.supplier}</p>}
-                          {exp.clientName && <p className="text-xs text-slate-400">👤 {exp.clientName}</p>}
                           {exp.date && <p className="text-xs text-slate-400">📅 {exp.date?.substring(0, 10)}</p>}
-                          {isPaid && exp.paid_date && <p className="text-xs text-emerald-500">✓ Pagado el {exp.paid_date}</p>}
+                          {isPaid && exp.paid_date && (
+                            <p className="text-xs text-emerald-500">✓ Pagado el {exp.paid_date}</p>
+                          )}
                         </div>
                         {exp.notes && <p className="text-xs text-slate-400 mt-0.5 truncate">{exp.notes}</p>}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <p className={`text-base font-bold ${isPaid ? "text-slate-400" : "text-red-600"}`}>{formatCLP(exp.amount)}</p>
-                      {exp.type === "direct" && (
-                        <div className="flex gap-1">
-                          {/* Botón pagar/desmarcar */}
-                          {isPaid ? (
-                            <button onClick={() => handleMarkUnpaid(exp)} title="Marcar como pendiente"
-                              className="p-1.5 hover:bg-orange-50 rounded-lg text-emerald-400 hover:text-orange-500">
-                              <CheckCircle className="w-4 h-4" />
-                            </button>
-                          ) : (
-                            <button onClick={() => handleMarkPaid(exp)} title="Marcar como pagado"
-                              className="p-1.5 hover:bg-emerald-50 rounded-lg text-slate-300 hover:text-emerald-500">
-                              <CheckCircle className="w-4 h-4" />
-                            </button>
-                          )}
-                          <button onClick={() => openEdit(exp)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600">
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                      <div className="flex gap-1">
+                        {isPaid ? (
+                          <button onClick={() => handleMarkUnpaid(exp)} title="Marcar como pendiente"
+                            className="p-1.5 hover:bg-orange-50 rounded-lg text-emerald-400 hover:text-orange-500">
+                            <CheckCircle className="w-4 h-4" />
                           </button>
-                          <button onClick={() => handleDelete(exp.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-300 hover:text-red-500">
-                            <Trash2 className="w-3.5 h-3.5" />
+                        ) : (
+                          <button onClick={() => handleMarkPaid(exp)} title="Marcar como pagado"
+                            className="p-1.5 hover:bg-emerald-50 rounded-lg text-slate-300 hover:text-emerald-500">
+                            <CheckCircle className="w-4 h-4" />
                           </button>
-                        </div>
-                      )}
+                        )}
+                        {!isFromQuote && (
+                          <>
+                            <button onClick={() => openEdit(exp)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600">
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                            </button>
+                            <button onClick={() => handleDelete(exp.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-300 hover:text-red-500">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -386,8 +432,7 @@ export default function OperationalExpenses() {
                 <div>
                   <label className="text-xs font-medium text-slate-500 mb-1.5 block">Monto (CLP) *</label>
                   <input type="number" min="0" className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-                    value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-                    placeholder="0" />
+                    value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0" />
                 </div>
                 <div>
                   <label className="text-xs font-medium text-slate-500 mb-1.5 block">Proveedor</label>
