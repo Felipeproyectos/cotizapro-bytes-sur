@@ -75,7 +75,9 @@ export default function History() {
     );
   });
 
-  const totalRevenue = filtered.reduce((sum, q) => sum + (q.total || 0), 0);
+  // Ingreso neto = total cobrado al cliente menos los gastos operacionales internos
+  const getNetIncome = (q) => (q.total || 0) - (q.total_operational_expenses || 0);
+  const totalRevenue = filtered.reduce((sum, q) => sum + getNetIncome(q), 0);
 
   // Group by month
   const grouped = filtered.reduce((acc, q) => {
@@ -161,7 +163,7 @@ export default function History() {
                   <div className="flex items-center gap-3 mb-3">
                     <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest capitalize">{month}</h2>
                     <div className="flex-1 h-px bg-gray-100" />
-                    <span className="text-xs text-slate-400">{formatCLP(items.reduce((s, q) => s + (q.total || 0), 0))}</span>
+                    <span className="text-xs text-slate-400">{formatCLP(items.reduce((s, q) => s + getNetIncome(q), 0))}</span>
                   </div>
                   <div className="space-y-2">
                     {items.map(q => {
@@ -196,7 +198,10 @@ export default function History() {
                             </div>
                           </div>
                           <div className="text-right shrink-0">
-                            <p className="text-sm font-bold text-slate-900">{formatCLP(q.total)}</p>
+                            <p className="text-sm font-bold text-slate-900">{formatCLP(getNetIncome(q))}</p>
+                            {q.total_operational_expenses > 0 && (
+                              <p className="text-xs text-slate-400">-{formatCLP(q.total_operational_expenses)} op.</p>
+                            )}
                             {q.include_iva && <p className="text-xs text-slate-400">IVA incluido</p>}
                           </div>
                           <button onClick={() => setPdfQuote(q)} className="p-2 hover:bg-gray-100 rounded-lg shrink-0" title="Ver PDF">
