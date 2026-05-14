@@ -154,10 +154,8 @@ export default function History() {
             <div className="p-6">
               <QuoteForm
                 quote={editingQuote}
-                onSave={async () => {
-                  // Recargar la cotización actualizada y sincronizar gastos op.
-                  const updated = await base44.entities.Quote.list("-created_date");
-                  const savedQuote = updated.find(q => q.id === editingQuote.id);
+                onSave={async (savedQuote) => {
+                  // Usar el quote devuelto directamente por QuoteForm (sin race condition)
                   if (savedQuote) await syncQuoteOpExpenses(savedQuote);
                   setEditingQuote(null);
                   loadQuotes();

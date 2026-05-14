@@ -225,7 +225,9 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
     }
 
     setSaving(false);
-    onSave();
+    // Pasar el quote guardado (con id y datos actualizados) al callback
+    const savedQuoteData = { ...payload, id: savedId };
+    onSave(savedQuoteData);
   };
 
   const formatCLP = (n) => `$${Math.round(n || 0).toLocaleString("es-CL")}`;
