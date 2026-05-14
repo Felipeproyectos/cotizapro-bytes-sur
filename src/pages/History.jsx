@@ -24,6 +24,38 @@ export default function History() {
   const [deleted, setDeleted] = useState([]);
   const [editingQuote, setEditingQuote] = useState(null);
 
+  const syncQuoteOpExpenses = async (quote) => {
+    const existing = await base44.entities.OperationalExpense.list("-date");
+    const existingByKey = {};
+    existing.forEach(e => {
+      if (e.quote_id) existingByKey[`${e.quote_id}__${e.description}`] = e;
+    });
+    const opItems = (quote.items || []).filter(i => i.is_operational_expense);
+    const toCreate = [];
+    for (const item of opItems) {
+      const desc = item.service_name || item.description || "Sin nombre";
+      const key = `${quote.id}__${desc}`;
+      if (!existingByKey[key]) {
+        toCreate.push({
+          date: (quote.executed_date || quote.created_date || format(new Date(), "yyyy-MM-dd")).substring(0, 10),
+          category: item.category || "Materiales",
+          description: desc,
+          amount: item.total || 0,
+          supplier: item.supplier || "",
+          notes: "",
+          is_recurring: false,
+          is_paid: false,
+          quote_id: quote.id,
+          quote_number: quote.quote_number || "",
+          quote_client: quote.client_name || "",
+        });
+      }
+    }
+    if (toCreate.length > 0) {
+      await base44.entities.OperationalExpense.bulkCreate(toCreate);
+    }
+  };
+
   const loadQuotes = () => {
     base44.entities.Quote.list("-created_date").then(data => {
       setQuotes(data.filter(q => q.status === "Ejecutada" || q.status === "Aceptada"));
@@ -107,7 +139,14 @@ export default function History() {
             <div className="p-6">
               <QuoteForm
                 quote={editingQuote}
-                onSave={() => { setEditingQuote(null); loadQuotes(); }}
+                onSave={async () => {
+                  // Recargar la cotización actualizada y sincronizar gastos op.
+                  const updated = await base44.entities.Quote.list("-created_date");
+                  const savedQuote = updated.find(q => q.id === editingQuote.id);
+                  if (savedQuote) await syncQuoteOpExpenses(savedQuote);
+                  setEditingQuote(null);
+                  loadQuotes();
+                }}
                 onCancel={() => setEditingQuote(null)}
               />
             </div>
