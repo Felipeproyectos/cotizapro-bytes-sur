@@ -40,228 +40,7 @@ export default function QuotePDF({ quote, onClose }) {
   const total_client = quote.total_client || (quote.total || 0) + operational_expenses_total;
 
   const handlePrint = () => {
-    const html = `<!DOCTYPE html>
-<html><head>
-<meta charset="utf-8"/>
-<title>Cotización ${quote.quote_number}</title>
-<style>
-  @page { size: Letter; margin: 12mm 15mm; }
-  * { font-family: Arial, Helvetica, sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: white; color: #0f172a; font-size: 13px; }
-  .header { background: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: white; padding: 28px 36px; display: flex; justify-content: space-between; align-items: flex-start; }
-  .header-left h1 { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: white; }
-  .header-left p { font-size: 11px; color: #94a3b8; margin-top: 2px; }
-  .header-right { text-align: right; }
-  .header-right .label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
-  .header-right .number { font-size: 18px; font-weight: 700; color: white; }
-  .header-right .date { font-size: 11px; color: #94a3b8; margin-top: 3px; }
-  .mensual-badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 999px; margin-top: 8px; background: #7c3aed33 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: #a78bfa; }
-  .section { padding: 18px 36px; border-bottom: 1px solid #f1f5f9; }
-  .section-title { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; }
-  .field-label { font-size: 10px; color: #94a3b8; margin-bottom: 1px; }
-  .field-value { font-size: 12px; color: #1e293b; font-weight: 500; }
-  table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-  thead tr { background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  th { font-size: 10px; font-weight: 600; color: #64748b; padding: 8px 10px; text-align: left; }
-  th.right { text-align: right; }
-  th.center { text-align: center; }
-  td { font-size: 12px; padding: 9px 10px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: top; }
-  td.center { text-align: center; }
-  td.right { text-align: right; }
-  td.bold { font-weight: 600; color: #0f172a; }
-  .sub { font-size: 10px; color: #94a3b8; margin-top: 2px; }
-  .totals { margin-top: 14px; display: flex; justify-content: flex-end; }
-  .totals-box { width: 230px; }
-  .total-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; }
-  .total-row span:first-child { color: #64748b; }
-  .total-row span:last-child { font-weight: 500; color: #0f172a; }
-  .total-row.final { border-top: 1px solid #e2e8f0; padding-top: 7px; margin-top: 5px; }
-  .total-row.final span { font-weight: 700; font-size: 14px; }
-  .total-note { font-size: 10px; color: #94a3b8; margin-top: 4px; text-align: right; }
-  .red { color: #dc2626; }
-  .green { color: #059669; }
-  .payment-section { padding: 16px 36px; background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border-bottom: 1px solid #f1f5f9; }
-  .mensual-section { padding: 14px 36px; background: #f5f3ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border-bottom: 1px solid #ede9fe; }
-  .notes { padding: 16px 36px; border-bottom: 1px solid #f1f5f9; }
-  .notes p { font-size: 12px; color: #475569; line-height: 1.6; white-space: pre-line; }
-  .footer { padding: 12px 36px; text-align: center; }
-  .footer p { font-size: 10px; color: #94a3b8; }
-</style>
-</head><body>
-
-<div class="header">
-  <div class="header-left">
-    ${company?.logo_url ? `<img src="${company.logo_url}" alt="Logo" style="max-height:52px;max-width:140px;object-fit:contain;margin-bottom:8px;display:block;" />` : ""}
-    <h1>${company?.company_name || "Mi Empresa"}</h1>
-    ${company?.rut ? `<p>RUT: ${company.rut}</p>` : ""}
-    ${company?.address ? `<p>${company.address}</p>` : ""}
-    ${company?.phone ? `<p>${company.phone}</p>` : ""}
-    ${company?.email ? `<p>${company.email}</p>` : ""}
-  </div>
-  <div class="header-right">
-    <div class="label">${isHonorarios ? "Boleta de Honorarios" : "Cotización"}</div>
-    <div class="number">${quote.quote_number}</div>
-    ${quote.title ? `<div style="color:#cbd5e1;font-size:12px;margin-top:3px;font-weight:500;">${quote.title}</div>` : ""}
-    <div class="date">${format(new Date(quote.created_date), "dd 'de' MMMM, yyyy", { locale: es })}</div>
-    ${quote.valid_until ? `<div class="date">Válida hasta: ${format(new Date(quote.valid_until), "dd MMM yyyy", { locale: es })}</div>` : ""}
-    ${isMensual ? `<div class="mensual-badge">🔄 SERVICIO MENSUAL · Cobro día ${quote.billing_day || "—"} de cada mes</div>` : ""}
-  </div>
-</div>
-
-<div class="section">
-  <div class="section-title">Datos del Cliente</div>
-  <div class="grid2">
-    <div><div class="field-label">Nombre</div><div class="field-value">${quote.client_name}</div></div>
-    ${quote.client_company ? `<div><div class="field-label">Empresa</div><div class="field-value">${quote.client_company}</div></div>` : ""}
-    ${quote.client_rut ? `<div><div class="field-label">RUT</div><div class="field-value">${quote.client_rut}</div></div>` : ""}
-    ${quote.client_email ? `<div><div class="field-label">Email</div><div class="field-value">${quote.client_email}</div></div>` : ""}
-    ${quote.client_phone ? `<div><div class="field-label">Teléfono</div><div class="field-value">${quote.client_phone}</div></div>` : ""}
-    ${quote.client_address ? `<div><div class="field-label">Dirección</div><div class="field-value">${quote.client_address}</div></div>` : ""}
-  </div>
-</div>
-
-<div class="section">
-  <div class="section-title">Detalle de Servicios</div>
-  <table>
-    <thead>
-      <tr>
-        <th>Descripción</th>
-        <th class="center">Cant.</th>
-        <th class="right">P. Unit.</th>
-        <th class="right">Total</th>
-      </tr>
-    </thead>
-    <tbody>
-        ${(quote.items || []).filter(item => !item.is_operational_expense).map(item => `
-      <tr>
-        <td class="bold">
-          ${item.service_name || item.description}
-          ${item.service_name && item.description ? `<div class="sub">${item.description}</div>` : ""}
-        </td>
-        <td class="center">${item.quantity}</td>
-        <td class="right">${isUF ? `${(item.unit_price_uf || 0).toFixed(2)} UF` : `$${Math.round(item.unit_price || 0).toLocaleString("es-CL")}`}</td>
-        <td class="right bold">${isUF ? `${(item.total_uf || 0).toFixed(2)} UF` : `$${Math.round(item.total || 0).toLocaleString("es-CL")}`}</td>
-      </tr>`).join("")}
-    </tbody>
-  </table>
-${operationalItems.length > 0 ? `
-<div class="section" style="margin-top:10px;">
-  <div class="section-title" style="background:#f0f4ff;color:#1e40af;">Materiales / Repuestos</div>
-  <table>
-    <thead>
-      <tr>
-        <th>Descripción</th>
-        <th class="center">Cant.</th>
-        <th class="right">P. Unit.</th>
-        <th class="right">Total</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${operationalItems.map(item => `
-      <tr>
-        <td class="bold">
-          ${item.service_name || item.description}
-          ${item.service_name && item.description ? `<div class="sub">${item.description}</div>` : ""}
-        </td>
-        <td class="center">${item.quantity}</td>
-        <td class="right">${isUF ? `${(item.unit_price_uf || 0).toFixed(2)} UF` : `$$${Math.round(item.unit_price || 0).toLocaleString("es-CL")}`}</td>
-        <td class="right bold">${isUF ? `${(item.total_uf || 0).toFixed(2)} UF` : `$$${Math.round(item.total || 0).toLocaleString("es-CL")}`}</td>
-      </tr>`).join("")}
-    </tbody>
-  </table>
-</div>
-` : ""}
-  <div class="totals">
-    <div class="totals-box">
-      <div class="total-row"><span>Subtotal</span><span>${isUF ? `${(quote.subtotal_uf || 0).toFixed(2)} UF` : `$${Math.round(quote.subtotal || 0).toLocaleString("es-CL")}`}</span></div>
-      ${isUF ? `<div class="total-note">1 UF = $${Math.round(ufVal).toLocaleString("es-CL")} CLP</div>` : ""}
-      ${discount_amount > 0 ? `<div class="total-row"><span style="color:#059669">Descuento (${discount_percent.toFixed(1)}%)</span><span style="color:#059669">-$${Math.round(discount_amount).toLocaleString("es-CL")}</span></div>` : ""}
-      ${paymentType === "Con IVA (19%)" ? `<div class="total-row"><span>IVA (19%)</span><span>$${Math.round(quote.iva_amount || 0).toLocaleString("es-CL")}</span></div>` : ""}
-      ${isHonorarios ? `
-        <div class="total-row"><span>Retención (10,75%)</span><span class="red">-$${Math.round(retencion).toLocaleString("es-CL")}</span></div>
-        <div class="total-row"><span>Líquido a pagar</span><span>$${Math.round(liquidoHonorarios).toLocaleString("es-CL")}</span></div>
-      ` : ""}
-            <div class="total-row final"><span>Total${isMensual ? " mensual" : ""}</span><span>${isUF ? `${((quote.total / ufVal) || 0).toFixed(2)} UF` : `$${Math.round(quote.total || 0).toLocaleString("es-CL")}`}</span></div>
-      ${isUF ? `<div class="total-note">≈ $${Math.round(quote.total || 0).toLocaleString("es-CL")} CLP</div>` : ""}
-      ${paymentType === "Sin IVA" ? `<div class="total-note">* Precio no incluye IVA</div>` : ""}
-          ${operational_expenses_total > 0 ? `
-            <div class="total-row" style="border-top:1px dashed #e2e8f0;margin-top:4px;padding-top:4px;">
-              <span style="color:#1e40af;font-weight:600;">Materiales / Repuestos</span>
-              <span style="font-weight:600;color:#1e40af;">${isUF ? `${(operational_expenses_total / ufVal).toFixed(2)} UF` : `$$${Math.round(operational_expenses_total).toLocaleString("es-CL")}`}</span>
-            </div>
-            <div class="total-row final" style="background:#eef2ff;">
-              <span style="color:#1e3a8a;font-weight:700;">Total a Pagar</span>
-              <span style="font-weight:700;color:#1e3a8a;">${isUF ? `${(total_client / ufVal).toFixed(2)} UF` : `$$${Math.round(total_client).toLocaleString("es-CL")}`}</span>
-            </div>
-          ` : ""}
-    </div>
-  </div>
-</div>
-
-${isMensual ? `
-<div class="mensual-section">
-  <div class="section-title" style="color:#7c3aed;">Condiciones de Servicio Mensual</div>
-  <div class="grid2">
-    <div><div class="field-label">Tipo de cobro</div><div class="field-value" style="color:#7c3aed;font-weight:700;">🔄 Mensual recurrente</div></div>
-    <div><div class="field-label">Día de cobro</div><div class="field-value">Día ${quote.billing_day || "—"} de cada mes</div></div>
-    <div><div class="field-label">Monto mensual</div><div class="field-value">$${Math.round(quote.total || 0).toLocaleString("es-CL")}</div></div>
-  </div>
-</div>` : ""}
-
-${(quote.abonos || []).length > 0 ? `
-<div class="section">
-  <div class="section-title">Abonos Recibidos</div>
-  <table>
-    <thead><tr>
-      <th>Fecha</th><th>Nota</th><th class="right">Monto</th>
-    </tr></thead>
-    <tbody>
-      ${(quote.abonos || []).map(a => `
-      <tr>
-        <td>${a.fecha ? format(new Date(a.fecha), "dd/MM/yyyy") : "—"}</td>
-        <td>${a.nota || "—"}</td>
-        <td class="right green">$${Math.round(a.monto || 0).toLocaleString("es-CL")}</td>
-      </tr>`).join("")}
-    </tbody>
-  </table>
-  <div style="display:flex;justify-content:flex-end;gap:40px;margin-top:10px;font-size:12px;">
-    <div style="text-align:right"><div style="color:#64748b">Total abonado</div><div style="font-weight:600;color:#059669">$${Math.round(totalAbonos).toLocaleString("es-CL")}</div></div>
-    <div style="text-align:right"><div style="color:#64748b">Saldo pendiente</div><div style="font-weight:700;font-size:14px;color:${saldoPendiente <= 0 ? "#059669" : "#ef4444"}">$${Math.round(saldoPendiente).toLocaleString("es-CL")}</div></div>
-  </div>
-</div>` : ""}
-
-${(() => {
-      const opts = quote.payment_options?.length > 0 ? quote.payment_options : (quote.payment_option ? [quote.payment_option] : []);
-      if (opts.length === 0) return "";
-      return `<div class="payment-section">
-  <div class="section-title">Datos de Pago</div>
-  ${opts.map((po, i) => `
-    ${po.label ? `<div style="font-size:11px;font-weight:600;color:#475569;margin-bottom:6px;${i > 0 ? 'margin-top:12px;padding-top:10px;border-top:1px solid #e2e8f0;' : ''}">${po.label}</div>` : ""}
-    <div class="grid2">
-      ${po.titular ? `<div><div class="field-label">Titular</div><div class="field-value">${po.titular}</div></div>` : ""}
-      ${po.rut ? `<div><div class="field-label">RUT</div><div class="field-value">${po.rut}</div></div>` : ""}
-      ${po.banco ? `<div><div class="field-label">Banco</div><div class="field-value">${po.banco}</div></div>` : ""}
-      ${po.tipo_cuenta ? `<div><div class="field-label">Tipo de cuenta</div><div class="field-value">${po.tipo_cuenta}</div></div>` : ""}
-      ${po.numero_cuenta ? `<div><div class="field-label">N° de Cuenta</div><div class="field-value">${po.numero_cuenta}</div></div>` : ""}
-      ${po.email_confirmacion ? `<div><div class="field-label">Email de confirmación</div><div class="field-value">${po.email_confirmacion}</div></div>` : ""}
-    </div>
-  `).join("")}
-</div>`;
-    })()}
-
-${quote.notes ? `
-<div class="notes">
-  <div class="section-title">Notas y Condiciones</div>
-  <p>${quote.notes}</p>
-</div>` : ""}
-
-<div class="footer">
-  <p>${company?.company_name || "Mi Empresa"}${company?.email ? ` · ${company.email}` : ""}${company?.phone ? ` · ${company.phone}` : ""}</p>
-  <p style="margin-top:2px;color:#cbd5e1;">Documento generado digitalmente</p>
-</div>
-
-</body></html>`;
+    const html = buildHtml();
 
     // Use hidden iframe to avoid window.open (works on iOS)
     let frame = printFrameRef.current;
@@ -285,14 +64,203 @@ ${quote.notes ? `
     };
   };
 
+  const buildHtml = () => {
+    const IVA_RATE = 0.19;
+    const isUFLocal = quote.currency === "UF";
+    const ufValLocal = quote.uf_value || 1;
+    const paymentTypeLocal = quote.payment_type || (quote.include_iva ? "Con IVA (19%)" : "Sin IVA");
+    const isHonorariosLocal = paymentTypeLocal === "Boleta de Honorarios";
+    const retencionLocal = isHonorariosLocal ? Math.round((quote.subtotal || 0) * 0.1075) : 0;
+    const liquidoLocal = isHonorariosLocal ? (quote.subtotal || 0) - retencionLocal : 0;
+    const discount_amountLocal = quote.discount_amount || 0;
+    const discount_percentLocal = quote.discount_percent || 0;
+    const isMensualLocal = quote.billing_type === "Mensual";
+    const opItemsLocal = (quote.items || []).filter(i => i.is_operational_expense);
+    const opTotalLocal = quote.total_operational_expenses || opItemsLocal.reduce((s, i) => s + (parseFloat(i.total) || 0), 0);
+    const totalAbLocal = (quote.abonos || []).reduce((s, a) => s + (a.monto || 0), 0);
+    const saldoLocal = (quote.total_client || quote.total || 0) - totalAbLocal;
+    const totalClientLocal = quote.total_client || (quote.total || 0) + opTotalLocal;
+    const fmtCLP = (n) => `$${Math.round(n || 0).toLocaleString("es-CL")}`;
+    const opts = quote.payment_options?.length > 0 ? quote.payment_options : (quote.payment_option ? [quote.payment_option] : []);
+
+    return `<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Cotización ${quote.quote_number}</title>
+<style>
+  @page { size: Letter; margin: 12mm 15mm; }
+  * { font-family: Arial, Helvetica, sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: white; color: #0f172a; font-size: 13px; }
+  .header { background: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: white; padding: 28px 36px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; }
+  .header-left h1 { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: white; }
+  .header-left p { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+  .header-right { text-align: right; }
+  .header-right .label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .header-right .number { font-size: 18px; font-weight: 700; color: white; }
+  .header-right .date { font-size: 11px; color: #94a3b8; margin-top: 3px; }
+  .section { padding: 18px 36px; border-bottom: 1px solid #f1f5f9; }
+  .section-title { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; }
+  .field-label { font-size: 10px; color: #94a3b8; margin-bottom: 1px; }
+  .field-value { font-size: 12px; color: #1e293b; font-weight: 500; }
+  table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+  thead tr { background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  th { font-size: 10px; font-weight: 600; color: #64748b; padding: 8px 10px; text-align: left; }
+  th.right { text-align: right; } th.center { text-align: center; }
+  td { font-size: 12px; padding: 9px 10px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: top; }
+  td.center { text-align: center; } td.right { text-align: right; } td.bold { font-weight: 600; color: #0f172a; }
+  .sub { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+  .totals { margin-top: 14px; display: flex; justify-content: flex-end; }
+  .totals-box { width: 230px; }
+  .total-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; }
+  .total-row span:first-child { color: #64748b; }
+  .total-row span:last-child { font-weight: 500; color: #0f172a; }
+  .total-row.final { border-top: 1px solid #e2e8f0; padding-top: 7px; margin-top: 5px; }
+  .total-row.final span { font-weight: 700; font-size: 14px; }
+  .total-note { font-size: 10px; color: #94a3b8; margin-top: 4px; text-align: right; }
+  .red { color: #dc2626; } .green { color: #059669; }
+  .payment-section { padding: 16px 36px; background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border-bottom: 1px solid #f1f5f9; }
+  .notes { padding: 16px 36px; border-bottom: 1px solid #f1f5f9; }
+  .notes p { font-size: 12px; color: #475569; line-height: 1.6; white-space: pre-line; }
+  .footer { padding: 12px 36px; text-align: center; }
+  .footer p { font-size: 10px; color: #94a3b8; }
+  @media (max-width: 600px) { .header { padding: 20px 16px; } .section, .payment-section, .notes, .footer { padding-left: 16px; padding-right: 16px; } .grid2 { grid-template-columns: 1fr; } .totals-box { width: 100%; } }
+</style>
+</head><body>
+<div class="header">
+  <div class="header-left">
+    ${company?.logo_url ? `<img src="${company.logo_url}" alt="Logo" style="max-height:52px;max-width:140px;object-fit:contain;margin-bottom:8px;display:block;" />` : ""}
+    <h1>${company?.company_name || "Mi Empresa"}</h1>
+    ${company?.rut ? `<p>RUT: ${company.rut}</p>` : ""}
+    ${company?.address ? `<p>${company.address}</p>` : ""}
+    ${company?.phone ? `<p>${company.phone}</p>` : ""}
+    ${company?.email ? `<p>${company.email}</p>` : ""}
+  </div>
+  <div class="header-right">
+    <div class="label">${isHonorariosLocal ? "Boleta de Honorarios" : "Cotización"}</div>
+    <div class="number">${quote.quote_number}</div>
+    ${quote.title ? `<div style="color:#cbd5e1;font-size:12px;margin-top:3px;">${quote.title}</div>` : ""}
+    <div class="date">${format(new Date(quote.created_date), "dd 'de' MMMM, yyyy", { locale: es })}</div>
+    ${quote.valid_until ? `<div class="date">Válida hasta: ${format(new Date(quote.valid_until), "dd MMM yyyy", { locale: es })}</div>` : ""}
+    ${isMensualLocal ? `<div style="display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;margin-top:8px;background:#7c3aed33;color:#a78bfa;">🔄 SERVICIO MENSUAL · Cobro día ${quote.billing_day || "—"} de cada mes</div>` : ""}
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Datos del Cliente</div>
+  <div class="grid2">
+    <div><div class="field-label">Nombre</div><div class="field-value">${quote.client_name}</div></div>
+    ${quote.client_company ? `<div><div class="field-label">Empresa</div><div class="field-value">${quote.client_company}</div></div>` : ""}
+    ${quote.client_rut ? `<div><div class="field-label">RUT</div><div class="field-value">${quote.client_rut}</div></div>` : ""}
+    ${quote.client_email ? `<div><div class="field-label">Email</div><div class="field-value">${quote.client_email}</div></div>` : ""}
+    ${quote.client_phone ? `<div><div class="field-label">Teléfono</div><div class="field-value">${quote.client_phone}</div></div>` : ""}
+    ${quote.client_address ? `<div><div class="field-label">Dirección</div><div class="field-value">${quote.client_address}</div></div>` : ""}
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Detalle de Servicios</div>
+  <table>
+    <thead><tr><th>Descripción</th><th class="center">Cant.</th><th class="right">P. Unit.</th><th class="right">Total</th></tr></thead>
+    <tbody>
+      ${(quote.items || []).filter(i => !i.is_operational_expense).map(item => `
+      <tr>
+        <td class="bold">${item.service_name || item.description}${item.service_name && item.description ? `<div class="sub">${item.description}</div>` : ""}</td>
+        <td class="center">${item.quantity}</td>
+        <td class="right">${isUFLocal ? `${(item.unit_price_uf || 0).toFixed(2)} UF` : fmtCLP(item.unit_price)}</td>
+        <td class="right bold">${isUFLocal ? `${(item.total_uf || 0).toFixed(2)} UF` : fmtCLP(item.total)}</td>
+      </tr>`).join("")}
+    </tbody>
+  </table>
+  ${opItemsLocal.length > 0 ? `
+  <div style="margin-top:12px;">
+    <div class="section-title" style="background:#eef2ff;color:#1e40af;padding:6px 10px;border-radius:4px;">Materiales / Repuestos</div>
+    <table>
+      <thead><tr style="background:#f0f4ff;"><th>Descripción</th><th class="center">Cant.</th><th class="right">P. Unit.</th><th class="right">Total</th></tr></thead>
+      <tbody>
+        ${opItemsLocal.map(item => `
+        <tr>
+          <td class="bold">${item.service_name || item.description}${item.service_name && item.description ? `<div class="sub">${item.description}</div>` : ""}</td>
+          <td class="center">${item.quantity}</td>
+          <td class="right">${isUFLocal ? `${(item.unit_price_uf || 0).toFixed(2)} UF` : fmtCLP(item.unit_price)}</td>
+          <td class="right bold">${isUFLocal ? `${(item.total_uf || 0).toFixed(2)} UF` : fmtCLP(item.total)}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>
+  </div>` : ""}
+  <div class="totals">
+    <div class="totals-box">
+      <div class="total-row"><span>Subtotal</span><span>${isUFLocal ? `${(quote.subtotal_uf || 0).toFixed(2)} UF` : fmtCLP(quote.subtotal)}</span></div>
+      ${discount_amountLocal > 0 ? `<div class="total-row"><span style="color:#059669">Descuento (${discount_percentLocal.toFixed(1)}%)</span><span style="color:#059669">-${fmtCLP(discount_amountLocal)}</span></div>` : ""}
+      ${paymentTypeLocal === "Con IVA (19%)" ? `<div class="total-row"><span>IVA (19%)</span><span>${fmtCLP(quote.iva_amount)}</span></div>` : ""}
+      ${isHonorariosLocal ? `<div class="total-row"><span>Retención (10,75%)</span><span class="red">-${fmtCLP(retencionLocal)}</span></div><div class="total-row"><span>Líquido a pagar</span><span>${fmtCLP(liquidoLocal)}</span></div>` : ""}
+      <div class="total-row final"><span>Total${isMensualLocal ? " mensual" : ""}</span><span>${isUFLocal ? `${((quote.total / ufValLocal) || 0).toFixed(2)} UF` : fmtCLP(quote.total)}</span></div>
+      ${paymentTypeLocal === "Sin IVA" ? `<div class="total-note">* Precio no incluye IVA</div>` : ""}
+      ${opTotalLocal > 0 ? `
+        <div class="total-row" style="border-top:1px dashed #e0e7ff;margin-top:4px;padding-top:4px;">
+          <span style="color:#1e40af;font-weight:600;">Materiales / Repuestos</span>
+          <span style="font-weight:600;color:#1e40af;">${isUFLocal ? `${(opTotalLocal / ufValLocal).toFixed(2)} UF` : fmtCLP(opTotalLocal)}</span>
+        </div>
+        <div class="total-row final" style="background:#eef2ff;padding:8px;border-radius:4px;margin-top:4px;">
+          <span style="color:#1e3a8a;font-weight:700;">Total a Pagar</span>
+          <span style="font-weight:700;color:#1e3a8a;">${isUFLocal ? `${(totalClientLocal / ufValLocal).toFixed(2)} UF` : fmtCLP(totalClientLocal)}</span>
+        </div>` : ""}
+    </div>
+  </div>
+</div>
+
+${(quote.abonos || []).length > 0 ? `
+<div class="section">
+  <div class="section-title">Abonos Recibidos</div>
+  <table>
+    <thead><tr><th>Fecha</th><th>Nota</th><th class="right">Monto</th></tr></thead>
+    <tbody>
+      ${(quote.abonos || []).map(a => `
+      <tr>
+        <td>${a.fecha ? format(new Date(a.fecha), "dd/MM/yyyy") : "—"}</td>
+        <td>${a.nota || "—"}</td>
+        <td class="right green">${fmtCLP(a.monto)}</td>
+      </tr>`).join("")}
+    </tbody>
+  </table>
+  <div style="display:flex;justify-content:flex-end;gap:40px;margin-top:10px;font-size:12px;">
+    <div style="text-align:right"><div style="color:#64748b">Total abonado</div><div style="font-weight:600;color:#059669">${fmtCLP(totalAbLocal)}</div></div>
+    <div style="text-align:right"><div style="color:#64748b">Saldo pendiente</div><div style="font-weight:700;font-size:14px;color:${saldoLocal <= 0 ? "#059669" : "#ef4444"}">${fmtCLP(saldoLocal)}</div></div>
+  </div>
+</div>` : ""}
+
+${opts.length > 0 ? `
+<div class="payment-section">
+  <div class="section-title">Datos de Pago</div>
+  ${opts.map((po, i) => `
+    ${po.label ? `<div style="font-size:11px;font-weight:600;color:#475569;margin-bottom:6px;${i > 0 ? "margin-top:12px;padding-top:10px;border-top:1px solid #e2e8f0;" : ""}">${po.label}</div>` : ""}
+    <div class="grid2">
+      ${po.titular ? `<div><div class="field-label">Titular</div><div class="field-value">${po.titular}</div></div>` : ""}
+      ${po.rut ? `<div><div class="field-label">RUT</div><div class="field-value">${po.rut}</div></div>` : ""}
+      ${po.banco ? `<div><div class="field-label">Banco</div><div class="field-value">${po.banco}</div></div>` : ""}
+      ${po.tipo_cuenta ? `<div><div class="field-label">Tipo de cuenta</div><div class="field-value">${po.tipo_cuenta}</div></div>` : ""}
+      ${po.numero_cuenta ? `<div><div class="field-label">N° de Cuenta</div><div class="field-value">${po.numero_cuenta}</div></div>` : ""}
+      ${po.email_confirmacion ? `<div><div class="field-label">Email de confirmación</div><div class="field-value">${po.email_confirmacion}</div></div>` : ""}
+    </div>
+  `).join("")}
+</div>` : ""}
+
+${quote.notes ? `<div class="notes"><div class="section-title">Notas y Condiciones</div><p>${quote.notes}</p></div>` : ""}
+
+<div class="footer">
+  <p>${company?.company_name || "Mi Empresa"}${company?.email ? ` · ${company.email}` : ""}${company?.phone ? ` · ${company.phone}` : ""}</p>
+  <p style="margin-top:2px;color:#cbd5e1;">Documento generado digitalmente</p>
+</div>
+</body></html>`;
+  };
+
   const handleShare = async () => {
-    const text = `Cotización ${quote.quote_number} — ${quote.client_name}`;
-    if (navigator.share) {
-      await navigator.share({ title: text, text });
-    } else {
-      await navigator.clipboard.writeText(text);
-      alert("Copiado al portapapeles");
-    }
+    const html = buildHtml();
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    // Abrir el documento completo en una nueva pestaña para compartir / ver
+    window.open(url, "_blank");
   };
 
   return (
