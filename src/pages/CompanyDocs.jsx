@@ -321,9 +321,18 @@ export default function CompanyDocs() {
                         <div className="border-t border-gray-100">
                           {catDocs.map((doc, idx) => (
                             <div key={doc.id} className={`flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition-colors ${idx < catDocs.length - 1 ? "border-b border-gray-50" : ""} ${doc.is_important ? "bg-amber-50/40" : ""}`}>
-                              {/* Icon */}
-                              <div className="w-9 h-9 bg-slate-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                                {fileIcon(doc.file_type)}
+
+                              {/* Thumbnail si es imagen, sino ícono de tipo */}
+                              <div className="flex-shrink-0">
+                                {doc.file_url && isImage(doc.file_type) ? (
+                                  <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+                                    <img src={doc.file_url} alt={doc.title} className="h-10 w-14 object-cover rounded-xl border border-gray-200 hover:opacity-80 transition-opacity" />
+                                  </a>
+                                ) : (
+                                  <div className="w-9 h-9 bg-slate-50 rounded-xl flex items-center justify-center">
+                                    {fileIcon(doc.file_type)}
+                                  </div>
+                                )}
                               </div>
 
                               {/* Info */}
@@ -342,25 +351,18 @@ export default function CompanyDocs() {
                                 )}
                               </div>
 
-                              {/* File + Actions */}
+                              {/* Actions */}
                               <div className="flex items-center gap-2 flex-shrink-0">
-                                {doc.file_url ? (
-                                  isImage(doc.file_type) ? (
-                                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                                      <img src={doc.file_url} alt={doc.title} className="h-9 w-14 object-cover rounded-lg border border-gray-200 hover:opacity-80 transition-opacity" />
-                                    </a>
-                                  ) : (
-                                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
-                                      className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium border border-blue-200 px-2.5 py-1.5 rounded-lg hover:bg-blue-50">
-                                      <ExternalLink className="w-3 h-3" />
-                                      Abrir
-                                    </a>
-                                  )
-                                ) : (
-                                  <span className="text-xs text-slate-300 italic">Sin archivo</span>
+                                {doc.file_url && !isImage(doc.file_type) && (
+                                  <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium border border-blue-200 px-2.5 py-1.5 rounded-lg hover:bg-blue-50">
+                                    <ExternalLink className="w-3 h-3" />
+                                    Abrir
+                                  </a>
                                 )}
-                                <button onClick={() => openEditDoc(doc)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600">
-                                  <Pencil className="w-3.5 h-3.5" />
+                                <button onClick={() => openEditDoc(doc)} className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-900 font-medium border border-gray-200 px-2.5 py-1.5 rounded-lg hover:bg-slate-50">
+                                  <Pencil className="w-3 h-3" />
+                                  Editar
                                 </button>
                                 <button onClick={() => handleDeleteDoc(doc.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-300 hover:text-red-500">
                                   <Trash2 className="w-3.5 h-3.5" />
