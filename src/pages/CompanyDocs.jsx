@@ -354,11 +354,11 @@ export default function CompanyDocs() {
 
                               {/* Actions */}
                               <div className="flex items-center gap-2 flex-shrink-0">
-                                {doc.file_url && !isImage(doc.file_type) && (
+                                {doc.file_url && (
                                   <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
                                     className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium border border-blue-200 px-2.5 py-1.5 rounded-lg hover:bg-blue-50">
                                     <ExternalLink className="w-3 h-3" />
-                                    Abrir
+                                    {isImage(doc.file_type) ? "Ver" : "Abrir"}
                                   </a>
                                 )}
                                 <button onClick={() => openEditDoc(doc)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600">
