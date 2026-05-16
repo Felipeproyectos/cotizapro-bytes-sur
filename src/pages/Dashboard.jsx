@@ -5,6 +5,7 @@ import { createPageUrl } from "@/utils";
 import { FileText, TrendingUp, CheckCircle, Clock, Plus, ArrowUpRight, MapPin, Phone, Mail, Globe, Building2 } from "lucide-react";
 import RecurringAlerts from "../components/dashboard/RecurringAlerts";
 import MonthlyServicesPanel from "../components/dashboard/MonthlyServicesPanel";
+import RecurringChargesAlert from "../components/dashboard/RecurringChargesAlert";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
@@ -163,6 +164,7 @@ export default function Dashboard() {
           </div>
         </div>
 
+        <RecurringChargesAlert />
         <RecurringAlerts />
         <MonthlyServicesPanel />
 

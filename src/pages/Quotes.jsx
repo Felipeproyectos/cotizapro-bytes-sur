@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Plus, FileText, Search, Pencil, Trash2, Download, Copy, CreditCard, X } from "lucide-react";
+import { Plus, FileText, Search, Pencil, Trash2, Download, Copy, CreditCard, X, RefreshCw } from "lucide-react";
 import { addDays, format as formatDate } from "date-fns";
 import QuoteForm from "../components/quotes/QuoteForm";
 import QuotePDF from "../components/quotes/QuotePDF";
+import RecurringChargesPanel from "../components/quotes/RecurringChargesPanel";
 
 const STATUS_COLORS = {
   Borrador: { bg: "#94a3b820", text: "#94a3b8" },
@@ -22,6 +23,7 @@ export default function Quotes() {
   const [selected, setSelected] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Todos");
+  const [activeTab, setActiveTab] = useState("cotizaciones");
   const [abonoModal, setAbonoModal] = useState(null); // quote
   const [abonoForm, setAbonoForm] = useState({ monto: "", fecha: "", nota: "" });
   const [savingAbono, setSavingAbono] = useState(false);
@@ -34,9 +36,10 @@ export default function Quotes() {
 
   useEffect(() => {
     load();
-    // Check URL for ?new=1
+    // Check URL for ?new=1 or ?tab=mensualidades
     const params = new URLSearchParams(window.location.search);
     if (params.get("new") === "1") setView("form");
+    if (params.get("tab") === "mensualidades") setActiveTab("mensualidades");
   }, []);
 
   const handleDelete = async (id) => {
@@ -118,44 +121,67 @@ export default function Quotes() {
       )}
 
       <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Cotizaciones</h1>
             <p className="text-sm text-slate-500 mt-1">{quotes.length} cotizaciones en total</p>
           </div>
+          {activeTab === "cotizaciones" && (
+            <button
+              onClick={() => { setSelected(null); setView("form"); }}
+              className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors"
+            >
+              <Plus className="w-4 h-4" /> Nueva Cotización
+            </button>
+          )}
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6">
           <button
-            onClick={() => { setSelected(null); setView("form"); }}
-            className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors"
+            onClick={() => setActiveTab("cotizaciones")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${activeTab === "cotizaciones" ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"}`}
           >
-            <Plus className="w-4 h-4" /> Nueva Cotización
+            <FileText className="w-4 h-4" /> Cotizaciones ({quotes.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("mensualidades")}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${activeTab === "mensualidades" ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"}`}
+          >
+            <RefreshCw className="w-4 h-4" /> Mensualidades
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-              placeholder="Buscar por cliente, empresa o número..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
+        {/* Tab: Mensualidades */}
+        {activeTab === "mensualidades" && <RecurringChargesPanel />}
+
+        {/* Filters + List (solo cotizaciones) */}
+        {activeTab === "cotizaciones" && (
+          <>
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                placeholder="Buscar por cliente, empresa o número..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {["Todos", "Borrador", "Enviada", "Aceptada"].map(s => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={`px-3 py-2 rounded-xl text-xs font-medium border transition-colors ${
+                    statusFilter === s ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            {["Todos", "Borrador", "Enviada", "Aceptada"].map(s => (
-              <button
-                key={s}
-                onClick={() => setStatusFilter(s)}
-                className={`px-3 py-2 rounded-xl text-xs font-medium border transition-colors ${
-                  statusFilter === s ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {loading ? (
           <div className="flex justify-center py-20">
@@ -234,6 +260,8 @@ export default function Quotes() {
               );
             })}
           </div>
+        )}
+          </>
         )}
       </div>
       {/* Modal Abono */}
