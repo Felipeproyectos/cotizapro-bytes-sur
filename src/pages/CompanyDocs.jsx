@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import {
   FolderOpen, Plus, X, Trash2, Upload, FileText, FileSpreadsheet,
-  Star, Search, Users, Pencil, ExternalLink, Image
+  Star, Search, Users, Pencil, ExternalLink, Image, ChevronDown, ChevronRight
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -44,6 +44,7 @@ export default function CompanyDocs() {
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState("todas");
   const [activeTab, setActiveTab] = useState("documentos");
+  const [openCategories, setOpenCategories] = useState({});
 
   // Doc modal
   const [showDocModal, setShowDocModal] = useState(false);
@@ -281,73 +282,99 @@ export default function CompanyDocs() {
                   <Plus className="w-4 h-4" /> Agregar Documento
                 </button>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {filteredDocs.map(doc => (
-                  <div key={doc.id} className={`bg-white rounded-2xl border p-5 shadow-sm hover:shadow-md transition-shadow ${doc.is_important ? "border-amber-200" : "border-gray-100"}`}>
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                          {fileIcon(doc.file_type)}
+            ) : (() => {
+              // Group docs by category
+              const grouped = {};
+              filteredDocs.forEach(doc => {
+                const cat = doc.category || "Otro";
+                if (!grouped[cat]) grouped[cat] = [];
+                grouped[cat].push(doc);
+              });
+
+              const toggleCat = (cat) => setOpenCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
+              const isOpen = (cat) => openCategories[cat] !== false; // open by default
+
+              return (
+                <div className="space-y-3">
+                  {Object.entries(grouped).map(([cat, catDocs]) => (
+                    <div key={cat} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                      {/* Category Header */}
+                      <button
+                        onClick={() => toggleCat(cat)}
+                        className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <FolderOpen className="w-4 h-4 text-slate-400" />
+                          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${CAT_COLORS[cat] || CAT_COLORS["Otro"]}`}>
+                            {cat}
+                          </span>
+                          <span className="text-xs text-slate-400 font-medium">{catDocs.length} documento{catDocs.length !== 1 ? "s" : ""}</span>
                         </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            {doc.is_important && <Star className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 fill-amber-400" />}
-                            <p className="text-sm font-bold text-slate-900 truncate">{doc.title}</p>
-                          </div>
-                          {doc.category && (
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${CAT_COLORS[doc.category] || CAT_COLORS["Otro"]}`}>
-                              {doc.category}
-                            </span>
-                          )}
+                        {isOpen(cat)
+                          ? <ChevronDown className="w-4 h-4 text-slate-400" />
+                          : <ChevronRight className="w-4 h-4 text-slate-400" />
+                        }
+                      </button>
+
+                      {/* Documents inside category */}
+                      {isOpen(cat) && (
+                        <div className="border-t border-gray-100">
+                          {catDocs.map((doc, idx) => (
+                            <div key={doc.id} className={`flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 transition-colors ${idx < catDocs.length - 1 ? "border-b border-gray-50" : ""} ${doc.is_important ? "bg-amber-50/40" : ""}`}>
+                              {/* Icon */}
+                              <div className="w-9 h-9 bg-slate-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                                {fileIcon(doc.file_type)}
+                              </div>
+
+                              {/* Info */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  {doc.is_important && <Star className="w-3 h-3 text-amber-400 flex-shrink-0 fill-amber-400" />}
+                                  <p className="text-sm font-semibold text-slate-900 truncate">{doc.title}</p>
+                                </div>
+                                {doc.description && <p className="text-xs text-slate-400 truncate mt-0.5">{doc.description}</p>}
+                                {doc.tags && (
+                                  <div className="flex flex-wrap gap-1 mt-1">
+                                    {doc.tags.split(",").map((tag, i) => (
+                                      <span key={i} className="text-xs bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">{tag.trim()}</span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* File + Actions */}
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                {doc.file_url ? (
+                                  isImage(doc.file_type) ? (
+                                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+                                      <img src={doc.file_url} alt={doc.title} className="h-9 w-14 object-cover rounded-lg border border-gray-200 hover:opacity-80 transition-opacity" />
+                                    </a>
+                                  ) : (
+                                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
+                                      className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium border border-blue-200 px-2.5 py-1.5 rounded-lg hover:bg-blue-50">
+                                      <ExternalLink className="w-3 h-3" />
+                                      Abrir
+                                    </a>
+                                  )
+                                ) : (
+                                  <span className="text-xs text-slate-300 italic">Sin archivo</span>
+                                )}
+                                <button onClick={() => openEditDoc(doc)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600">
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button onClick={() => handleDeleteDoc(doc.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-300 hover:text-red-500">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      </div>
-                      <div className="flex gap-1 flex-shrink-0 ml-2">
-                        <button onClick={() => openEditDoc(doc)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600">
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => handleDeleteDoc(doc.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-300 hover:text-red-500">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {doc.description && (
-                      <p className="text-xs text-slate-500 mb-3 line-clamp-2">{doc.description}</p>
-                    )}
-
-                    {doc.tags && (
-                      <div className="flex flex-wrap gap-1 mb-3">
-                        {doc.tags.split(",").map((tag, i) => (
-                          <span key={i} className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{tag.trim()}</span>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between mt-2">
-                      <p className="text-xs text-slate-400">
-                        {doc.created_date ? format(new Date(doc.created_date), "dd/MM/yyyy") : ""}
-                      </p>
-                      {doc.file_url ? (
-                        isImage(doc.file_type) ? (
-                          <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                            <img src={doc.file_url} alt={doc.title} className="h-8 w-12 object-cover rounded-lg border border-gray-200 hover:opacity-80 transition-opacity" />
-                          </a>
-                        ) : (
-                          <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50">
-                            <ExternalLink className="w-3 h-3" />
-                            {doc.file_name ? doc.file_name.substring(0, 20) + (doc.file_name.length > 20 ? "..." : "") : "Abrir archivo"}
-                          </a>
-                        )
-                      ) : (
-                        <span className="text-xs text-slate-300 italic">Sin archivo</span>
                       )}
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              );
+            })()}
           </>
         )}
 
