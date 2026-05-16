@@ -191,15 +191,10 @@ export default function CompanyDocs() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-100 px-6 py-5">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-              <FolderOpen className="w-4 h-4 text-blue-600" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">Documentación de la Empresa</h1>
-              <p className="text-xs text-slate-500">Archivos, contratos y datos societarios de Byte Sur</p>
-            </div>
+        <div className="flex items-start justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">Documentación de la Empresa</h1>
+            <p className="text-xs text-slate-500 mt-0.5">Archivos, contratos y datos societarios de Byte Sur</p>
           </div>
           <button
             onClick={activeTab === "documentos" ? openNewDoc : openNewPartner}
