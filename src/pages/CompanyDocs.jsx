@@ -73,9 +73,9 @@ export default function CompanyDocs() {
   useEffect(() => { load(); }, []);
 
   // ---- Docs ----
-  const openNewDoc = () => {
+  const openNewDoc = (cat) => {
     setEditingDoc(null);
-    setDocForm(emptyDoc);
+    setDocForm({ ...emptyDoc, category: cat || emptyDoc.category });
     setSelectedFiles([]);
     setShowDocModal(true);
   };
@@ -299,22 +299,23 @@ export default function CompanyDocs() {
                   {Object.entries(grouped).map(([cat, catDocs]) => (
                     <div key={cat} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                       {/* Category Header */}
-                      <button
-                        onClick={() => toggleCat(cat)}
-                        className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-between px-5 py-4">
+                        <button onClick={() => toggleCat(cat)} className="flex items-center gap-3 flex-1 text-left hover:opacity-80 transition-opacity">
                           <FolderOpen className="w-4 h-4 text-slate-400" />
                           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${CAT_COLORS[cat] || CAT_COLORS["Otro"]}`}>
                             {cat}
                           </span>
                           <span className="text-xs text-slate-400 font-medium">{catDocs.length} documento{catDocs.length !== 1 ? "s" : ""}</span>
-                        </div>
-                        {isOpen(cat)
-                          ? <ChevronDown className="w-4 h-4 text-slate-400" />
-                          : <ChevronRight className="w-4 h-4 text-slate-400" />
-                        }
-                      </button>
+                          {isOpen(cat)
+                            ? <ChevronDown className="w-4 h-4 text-slate-400" />
+                            : <ChevronRight className="w-4 h-4 text-slate-400" />
+                          }
+                        </button>
+                        <button onClick={() => openNewDoc(cat)} className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-900 font-medium border border-gray-200 px-2.5 py-1.5 rounded-lg hover:bg-slate-50 flex-shrink-0 ml-3">
+                          <Plus className="w-3 h-3" />
+                          Agregar
+                        </button>
+                      </div>
 
                       {/* Documents inside category */}
                       {isOpen(cat) && (
@@ -360,9 +361,8 @@ export default function CompanyDocs() {
                                     Abrir
                                   </a>
                                 )}
-                                <button onClick={() => openEditDoc(doc)} className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-900 font-medium border border-gray-200 px-2.5 py-1.5 rounded-lg hover:bg-slate-50">
-                                  <Pencil className="w-3 h-3" />
-                                  Editar
+                                <button onClick={() => openEditDoc(doc)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600">
+                                  <Pencil className="w-3.5 h-3.5" />
                                 </button>
                                 <button onClick={() => handleDeleteDoc(doc.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-300 hover:text-red-500">
                                   <Trash2 className="w-3.5 h-3.5" />
