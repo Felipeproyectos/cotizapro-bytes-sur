@@ -51,7 +51,7 @@ export default function CompanyDocs() {
   const [docForm, setDocForm] = useState(emptyDoc);
   const [uploading, setUploading] = useState(false);
   const [savingDoc, setSavingDoc] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
   // Partner modal
   const [showPartnerModal, setShowPartnerModal] = useState(false);
@@ -75,7 +75,7 @@ export default function CompanyDocs() {
   const openNewDoc = () => {
     setEditingDoc(null);
     setDocForm(emptyDoc);
-    setSelectedFile(null);
+    setSelectedFiles([]);
     setShowDocModal(true);
   };
 
@@ -88,36 +88,52 @@ export default function CompanyDocs() {
       tags: doc.tags || "",
       is_important: doc.is_important || false,
     });
-    setSelectedFile(null);
+    setSelectedFiles([]);
     setShowDocModal(true);
   };
 
   const handleFileChange = (e) => {
-    setSelectedFile(e.target.files[0] || null);
+    setSelectedFiles(Array.from(e.target.files));
   };
 
   const handleSaveDoc = async () => {
-    if (!docForm.title) return;
+    if (!docForm.title && selectedFiles.length === 0) return;
     setSavingDoc(true);
 
-    let fileData = {};
-    if (selectedFile) {
-      setUploading(true);
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: selectedFile });
-      fileData = {
-        file_url,
-        file_name: selectedFile.name,
-        file_type: selectedFile.type,
-      };
-      setUploading(false);
-    }
-
-    const payload = { ...docForm, ...fileData };
-
+    // If editing a single doc with files selected, update with first file
     if (editingDoc?.id) {
-      await base44.entities.CompanyDocument.update(editingDoc.id, payload);
+      let fileData = {};
+      if (selectedFiles.length > 0) {
+        setUploading(true);
+        const { file_url } = await base44.integrations.Core.UploadFile({ file: selectedFiles[0] });
+        fileData = { file_url, file_name: selectedFiles[0].name, file_type: selectedFiles[0].type };
+        setUploading(false);
+      }
+      await base44.entities.CompanyDocument.update(editingDoc.id, { ...docForm, ...fileData });
+    } else if (selectedFiles.length > 1) {
+      // Multiple files: create one document per file
+      setUploading(true);
+      for (const file of selectedFiles) {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        await base44.entities.CompanyDocument.create({
+          ...docForm,
+          title: docForm.title || file.name,
+          file_url,
+          file_name: file.name,
+          file_type: file.type,
+        });
+      }
+      setUploading(false);
     } else {
-      await base44.entities.CompanyDocument.create(payload);
+      // Single new doc
+      let fileData = {};
+      if (selectedFiles.length === 1) {
+        setUploading(true);
+        const { file_url } = await base44.integrations.Core.UploadFile({ file: selectedFiles[0] });
+        fileData = { file_url, file_name: selectedFiles[0].name, file_type: selectedFiles[0].type };
+        setUploading(false);
+      }
+      await base44.entities.CompanyDocument.create({ ...docForm, ...fileData });
     }
 
     setSavingDoc(false);
@@ -454,16 +470,27 @@ export default function CompanyDocs() {
                 <label className="text-xs font-medium text-slate-500 mb-1.5 block">Archivo (PDF, Excel, Word, Imagen)</label>
                 <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-slate-400 hover:bg-gray-50 transition-colors">
                   <Upload className="w-6 h-6 text-slate-400 mb-1" />
-                  <span className="text-sm text-slate-500">
-                    {selectedFile ? selectedFile.name : (editingDoc?.file_name ? `Archivo actual: ${editingDoc.file_name}` : "Haz clic para subir archivo")}
+                  <span className="text-sm text-slate-500 text-center px-2">
+                    {selectedFiles.length > 0
+                      ? `${selectedFiles.length} archivo(s) seleccionado(s)`
+                      : (editingDoc?.file_name ? `Archivo actual: ${editingDoc.file_name}` : "Haz clic para subir archivos")}
                   </span>
-                  <span className="text-xs text-slate-400 mt-0.5">PDF, XLSX, DOCX, PNG, JPG, WEBP</span>
-                  <input type="file" accept=".pdf,.xlsx,.xls,.docx,.doc,.png,.jpg,.jpeg,.webp,.gif" className="hidden" onChange={handleFileChange} />
+                  <span className="text-xs text-slate-400 mt-0.5">PDF, XLSX, DOCX, PNG, JPG, WEBP — múltiples permitidos</span>
+                  <input type="file" accept=".pdf,.xlsx,.xls,.docx,.doc,.png,.jpg,.jpeg,.webp,.gif" multiple className="hidden" onChange={handleFileChange} />
                 </label>
-                {selectedFile && isImage(selectedFile.type) && (
-                  <img src={URL.createObjectURL(selectedFile)} alt="preview" className="mt-2 h-24 rounded-xl object-cover border border-gray-200" />
+                {selectedFiles.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {selectedFiles.map((f, i) => (
+                      <div key={i} className="flex items-center gap-1.5 bg-slate-100 rounded-lg px-2 py-1">
+                        {isImage(f.type)
+                          ? <img src={URL.createObjectURL(f)} alt={f.name} className="h-6 w-6 rounded object-cover" />
+                          : <FileText className="w-4 h-4 text-slate-400" />}
+                        <span className="text-xs text-slate-600 max-w-[120px] truncate">{f.name}</span>
+                      </div>
+                    ))}
+                  </div>
                 )}
-                {!selectedFile && editingDoc?.file_url && isImage(editingDoc.file_type) && (
+                {selectedFiles.length === 0 && editingDoc?.file_url && isImage(editingDoc.file_type) && (
                   <img src={editingDoc.file_url} alt="actual" className="mt-2 h-24 rounded-xl object-cover border border-gray-200" />
                 )}
               </div>
@@ -472,9 +499,9 @@ export default function CompanyDocs() {
               <button onClick={() => setShowDocModal(false)} className="px-4 py-2 text-sm text-slate-500 border border-gray-200 rounded-xl hover:bg-gray-50">
                 Cancelar
               </button>
-              <button onClick={handleSaveDoc} disabled={savingDoc || uploading || !docForm.title}
+              <button onClick={handleSaveDoc} disabled={savingDoc || uploading || (!docForm.title && selectedFiles.length === 0)}
                 className="px-4 py-2 text-sm bg-slate-900 text-white rounded-xl hover:bg-slate-800 disabled:opacity-50">
-                {uploading ? "Subiendo archivo..." : savingDoc ? "Guardando..." : editingDoc ? "Actualizar" : "Guardar"}
+                {uploading ? "Subiendo..." : savingDoc ? "Guardando..." : editingDoc ? "Actualizar" : selectedFiles.length > 1 ? `Guardar ${selectedFiles.length} archivos` : "Guardar"}
               </button>
             </div>
           </div>
