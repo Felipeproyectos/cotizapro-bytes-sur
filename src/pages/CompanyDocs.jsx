@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import {
   FolderOpen, Plus, X, Trash2, Upload, FileText, FileSpreadsheet,
-  Star, Search, Users, Pencil, ExternalLink, ChevronDown, ChevronUp
+  Star, Search, Users, Pencil, ExternalLink, Image
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -25,7 +25,13 @@ function fileIcon(type) {
     return <FileSpreadsheet className="w-5 h-5 text-green-600" />;
   if (type.includes("word") || type.includes("doc"))
     return <FileText className="w-5 h-5 text-blue-500" />;
+  if (type.includes("image"))
+    return <Image className="w-5 h-5 text-purple-500" />;
   return <FileText className="w-5 h-5 text-slate-400" />;
+}
+
+function isImage(type) {
+  return type && type.includes("image");
 }
 
 const emptyDoc = { title: "", description: "", category: "Legal", tags: "", is_important: false };
@@ -295,11 +301,17 @@ export default function CompanyDocs() {
                         {doc.created_date ? format(new Date(doc.created_date), "dd/MM/yyyy") : ""}
                       </p>
                       {doc.file_url ? (
-                        <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50">
-                          <ExternalLink className="w-3 h-3" />
-                          {doc.file_name ? doc.file_name.substring(0, 20) + (doc.file_name.length > 20 ? "..." : "") : "Abrir archivo"}
-                        </a>
+                        isImage(doc.file_type) ? (
+                          <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+                            <img src={doc.file_url} alt={doc.title} className="h-8 w-12 object-cover rounded-lg border border-gray-200 hover:opacity-80 transition-opacity" />
+                          </a>
+                        ) : (
+                          <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50">
+                            <ExternalLink className="w-3 h-3" />
+                            {doc.file_name ? doc.file_name.substring(0, 20) + (doc.file_name.length > 20 ? "..." : "") : "Abrir archivo"}
+                          </a>
+                        )
                       ) : (
                         <span className="text-xs text-slate-300 italic">Sin archivo</span>
                       )}
@@ -439,15 +451,21 @@ export default function CompanyDocs() {
                 </span>
               </label>
               <div>
-                <label className="text-xs font-medium text-slate-500 mb-1.5 block">Archivo (PDF, Excel, Word)</label>
+                <label className="text-xs font-medium text-slate-500 mb-1.5 block">Archivo (PDF, Excel, Word, Imagen)</label>
                 <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-slate-400 hover:bg-gray-50 transition-colors">
                   <Upload className="w-6 h-6 text-slate-400 mb-1" />
                   <span className="text-sm text-slate-500">
                     {selectedFile ? selectedFile.name : (editingDoc?.file_name ? `Archivo actual: ${editingDoc.file_name}` : "Haz clic para subir archivo")}
                   </span>
-                  <span className="text-xs text-slate-400 mt-0.5">PDF, XLSX, DOCX</span>
-                  <input type="file" accept=".pdf,.xlsx,.xls,.docx,.doc" className="hidden" onChange={handleFileChange} />
+                  <span className="text-xs text-slate-400 mt-0.5">PDF, XLSX, DOCX, PNG, JPG, WEBP</span>
+                  <input type="file" accept=".pdf,.xlsx,.xls,.docx,.doc,.png,.jpg,.jpeg,.webp,.gif" className="hidden" onChange={handleFileChange} />
                 </label>
+                {selectedFile && isImage(selectedFile.type) && (
+                  <img src={URL.createObjectURL(selectedFile)} alt="preview" className="mt-2 h-24 rounded-xl object-cover border border-gray-200" />
+                )}
+                {!selectedFile && editingDoc?.file_url && isImage(editingDoc.file_type) && (
+                  <img src={editingDoc.file_url} alt="actual" className="mt-2 h-24 rounded-xl object-cover border border-gray-200" />
+                )}
               </div>
             </div>
             <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
