@@ -172,7 +172,6 @@ export default function Dashboard() {
           <StatCard title="Ejecutadas" value={statusCounts["Ejecutada"] || 0} subtitle="Trabajos completados" icon={CheckCircle} color="bg-emerald-500" />
           <StatCard title="Pendientes" value={(statusCounts["Enviada"] || 0) + (statusCounts["Borrador"] || 0)} subtitle="En espera" icon={Clock} color="bg-blue-500" />
           <StatCard title="Ingresos (One-time)" value={formatCLP(totalRevenue)} subtitle="Proyectos ejecutados" icon={TrendingUp} color="bg-violet-500" />
-          <StatCard title="Ingresos (Mensual)" value={formatCLP(monthlyRevenue)} subtitle="Servicios recurrentes" icon={TrendingUp} color="bg-pink-500" />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

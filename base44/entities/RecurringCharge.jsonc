@@ -1,0 +1,62 @@
+{
+  "name": "RecurringCharge",
+  "type": "object",
+  "properties": {
+    "quote_id": {
+      "type": "string",
+      "description": "ID de la cotizaci\u00f3n asociada"
+    },
+    "client_name": {
+      "type": "string",
+      "description": "Nombre del cliente"
+    },
+    "client_company": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string",
+      "description": "T\u00edtulo del servicio recurrente"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Monto mensual"
+    },
+    "billing_day": {
+      "type": "number",
+      "description": "D\u00eda del mes para cobrar (1-28)"
+    },
+    "next_billing_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha del pr\u00f3ximo cobro"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pendiente",
+        "pagado"
+      ],
+      "default": "pendiente"
+    },
+    "paid_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha en que se marc\u00f3 como pagado"
+    },
+    "payment_proof_url": {
+      "type": "string",
+      "description": "URL del comprobante de transferencia"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true,
+      "description": "Si el cobro recurrente sigue activo"
+    }
+  },
+  "required": [
+    "quote_id",
+    "client_name",
+    "amount",
+    "billing_day"
+  ]
+}
