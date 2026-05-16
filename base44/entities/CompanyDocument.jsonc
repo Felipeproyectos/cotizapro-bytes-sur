@@ -1,0 +1,57 @@
+{
+  "name": "CompanyDocument",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "T\u00edtulo del documento"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descripci\u00f3n o de qu\u00e9 trata el documento"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Legal",
+        "Contable",
+        "Contratos",
+        "T\u00e9cnico",
+        "Recursos Humanos",
+        "Comercial",
+        "Otro"
+      ],
+      "description": "Categor\u00eda del documento"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL del archivo subido"
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Nombre original del archivo"
+    },
+    "file_type": {
+      "type": "string",
+      "description": "Tipo de archivo (pdf, xlsx, docx, etc.)"
+    },
+    "tags": {
+      "type": "string",
+      "description": "Etiquetas separadas por coma"
+    },
+    "is_important": {
+      "type": "boolean",
+      "default": false,
+      "description": "Documento importante / prioritario"
+    }
+  },
+  "required": [
+    "title"
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {},
+    "delete": {}
+  }
+}

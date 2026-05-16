@@ -1,0 +1,51 @@
+{
+  "name": "Partner",
+  "type": "object",
+  "properties": {
+    "full_name": {
+      "type": "string",
+      "description": "Nombre completo del socio"
+    },
+    "rut": {
+      "type": "string",
+      "description": "RUT del socio"
+    },
+    "role": {
+      "type": "string",
+      "description": "Cargo o rol dentro de la empresa"
+    },
+    "equity_percent": {
+      "type": "number",
+      "description": "Porcentaje de participaci\u00f3n societaria"
+    },
+    "email": {
+      "type": "string",
+      "description": "Correo electr\u00f3nico"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Tel\u00e9fono de contacto"
+    },
+    "address": {
+      "type": "string",
+      "description": "Direcci\u00f3n personal"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notas adicionales"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Foto del socio"
+    }
+  },
+  "required": [
+    "full_name"
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {},
+    "delete": {}
+  }
+}

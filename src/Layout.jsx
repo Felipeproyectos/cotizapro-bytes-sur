@@ -13,6 +13,7 @@ import {
   ChevronRight,
   ChevronLeft,
   TrendingDown,
+  FolderOpen,
 } from "lucide-react";
 
 const navItems = [
@@ -21,10 +22,11 @@ const navItems = [
   { name: "Historial", page: "History", icon: Wrench },
   { name: "Gastos Operacionales", page: "OperationalExpenses", icon: TrendingDown },
   { name: "Servicios", page: "Services", icon: Wifi },
+  { name: "Documentación", page: "CompanyDocs", icon: FolderOpen },
   { name: "Configuración", page: "Settings", icon: Settings },
 ];
 
-const ROOT_PAGES = ["Dashboard", "Quotes", "History", "OperationalExpenses", "Services", "Settings"];
+const ROOT_PAGES = ["Dashboard", "Quotes", "History", "OperationalExpenses", "Services", "Settings", "CompanyDocs"];
 
 export default function Layout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);

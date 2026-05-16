@@ -4,6 +4,7 @@ import OperationalExpenses from './pages/OperationalExpenses';
 import Quotes from './pages/Quotes';
 import Services from './pages/Services';
 import Settings from './pages/Settings';
+import CompanyDocs from './pages/CompanyDocs';
 import __Layout from './Layout.jsx';
 
 
@@ -14,6 +15,7 @@ export const PAGES = {
       "Quotes": Quotes,
       "Services": Services,
       "Settings": Settings,
+      "CompanyDocs": CompanyDocs,
 }
 
 export const pagesConfig = {
