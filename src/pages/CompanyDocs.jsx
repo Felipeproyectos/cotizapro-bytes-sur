@@ -10,13 +10,13 @@ const CAT_COLORS = {
   Legal: "bg-red-100 text-red-700",
   Contable: "bg-green-100 text-green-700",
   Contratos: "bg-blue-100 text-blue-700",
-  Técnico: "bg-indigo-100 text-indigo-700",
+  Diseños: "bg-emerald-100 text-emerald-700",
   "Recursos Humanos": "bg-pink-100 text-pink-700",
   Comercial: "bg-amber-100 text-amber-700",
   Otro: "bg-gray-100 text-gray-600",
 };
 
-const CATEGORIES = ["Legal", "Contable", "Contratos", "Técnico", "Recursos Humanos", "Comercial", "Otro"];
+const CATEGORIES = ["Legal", "Contable", "Contratos", "Diseños", "Recursos Humanos", "Comercial", "Otro"];
 
 function fileIcon(type) {
   if (!type) return <FileText className="w-5 h-5 text-slate-400" />;
@@ -304,7 +304,7 @@ export default function CompanyDocs() {
               });
 
               const toggleCat = (cat) => setOpenCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
-              const isOpen = (cat) => openCategories[cat] !== false; // open by default
+              const isOpen = (cat) => openCategories[cat] === true; // closed by default
 
               return (
                 <div className="space-y-3">
