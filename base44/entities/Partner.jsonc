@@ -37,6 +37,10 @@
     "photo_url": {
       "type": "string",
       "description": "Foto del socio"
+    },
+    "id_card_url": {
+      "type": "string",
+      "description": "URL del carnet de identidad (PDF o imagen)"
     }
   },
   "required": [

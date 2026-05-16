@@ -59,6 +59,7 @@ export default function CompanyDocs() {
   const [editingPartner, setEditingPartner] = useState(null);
   const [partnerForm, setPartnerForm] = useState(emptyPartner);
   const [savingPartner, setSavingPartner] = useState(false);
+  const [partnerIdFile, setPartnerIdFile] = useState(null);
 
   const load = async () => {
     const [docsData, partnersData] = await Promise.all([
@@ -173,6 +174,7 @@ export default function CompanyDocs() {
   const openNewPartner = () => {
     setEditingPartner(null);
     setPartnerForm(emptyPartner);
+    setPartnerIdFile(null);
     setShowPartnerModal(true);
   };
 
@@ -187,16 +189,24 @@ export default function CompanyDocs() {
       phone: p.phone || "",
       address: p.address || "",
       notes: p.notes || "",
+      id_card_url: p.id_card_url || "",
     });
+    setPartnerIdFile(null);
     setShowPartnerModal(true);
   };
 
   const handleSavePartner = async () => {
     if (!partnerForm.full_name) return;
     setSavingPartner(true);
+    let idCardUrl = partnerForm.id_card_url || null;
+    if (partnerIdFile) {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: partnerIdFile });
+      idCardUrl = file_url;
+    }
     const payload = {
       ...partnerForm,
       equity_percent: parseFloat(partnerForm.equity_percent) || 0,
+      id_card_url: idCardUrl,
     };
     if (editingPartner?.id) {
       await base44.entities.Partner.update(editingPartner.id, payload);
@@ -205,6 +215,7 @@ export default function CompanyDocs() {
     }
     setSavingPartner(false);
     setShowPartnerModal(false);
+    setPartnerIdFile(null);
     load();
   };
 
@@ -452,6 +463,12 @@ export default function CompanyDocs() {
                           <p className="text-xs text-slate-500">{p.notes}</p>
                         </div>
                       )}
+                      {p.id_card_url && (
+                        <a href={p.id_card_url} target="_blank" rel="noopener noreferrer"
+                          className="mt-3 flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-50 w-fit">
+                          <ExternalLink className="w-3 h-3" /> Ver carnet de identidad
+                        </a>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -608,6 +625,24 @@ export default function CompanyDocs() {
                   <textarea rows={2} className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10 resize-none"
                     value={partnerForm.notes} onChange={e => setPartnerForm(f => ({ ...f, notes: e.target.value }))}
                     placeholder="Información adicional..." />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-xs font-medium text-slate-500 mb-1.5 block">Carnet de identidad (PDF o imagen)</label>
+                  <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-slate-400 hover:bg-gray-50 transition-colors">
+                    <Upload className="w-5 h-5 text-slate-400 mb-1" />
+                    <span className="text-sm text-slate-500">
+                      {partnerIdFile ? partnerIdFile.name : (partnerForm.id_card_url ? "Carnet ya cargado — clic para reemplazar" : "Subir carnet")}
+                    </span>
+                    <span className="text-xs text-slate-400">PDF, PNG, JPG, WEBP</span>
+                    <input type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" className="hidden"
+                      onChange={e => setPartnerIdFile(e.target.files[0] || null)} />
+                  </label>
+                  {partnerForm.id_card_url && !partnerIdFile && (
+                    <a href={partnerForm.id_card_url} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1 mt-2 text-xs text-blue-500 hover:text-blue-700">
+                      <ExternalLink className="w-3 h-3" /> Ver carnet actual
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
