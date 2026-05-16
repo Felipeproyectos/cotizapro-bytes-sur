@@ -58,7 +58,6 @@ export default function OperationalExpenses() {
 
   useEffect(() => { load(); }, []);
 
-  // Sincronizar gastos de cotizaciones → crear/actualizar registros OperationalExpense vinculados
   const syncQuoteExpenses = async () => {
     setSyncing(true);
     const expensesData = await base44.entities.OperationalExpense.list("-date");
@@ -98,11 +97,8 @@ export default function OperationalExpenses() {
     setSyncing(false);
   };
 
-  // Separar gastos con y sin cotización
   const quoteLinkedExpenses = directExpenses.filter(e => !!e.quote_id);
-  const pureDirectExpenses = directExpenses.filter(e => !e.quote_id);
-
-  const allExpenses = directExpenses; // todos son registros reales ahora
+  const allExpenses = directExpenses;
 
   const filtered = allExpenses.filter((exp) => {
     const matchSearch =
@@ -116,7 +112,10 @@ export default function OperationalExpenses() {
     const matchMonth = !filterMonth || dateStr === filterMonth;
 
     let matchTab = true;
-    if (filterTab === "pendientes") matchTab = !exp.is_paid;
+    if (filterTab === "todos") {
+      // Solo mostrar gastos que aún requieren acción: no pagados O sin cotización asociada
+      matchTab = !exp.is_paid;
+    } else if (filterTab === "pendientes") matchTab = !exp.is_paid;
     else if (filterTab === "pagados") matchTab = !!exp.is_paid;
     else if (filterTab === "recurrentes") matchTab = !!exp.is_recurring;
     else if (filterTab === "cotizaciones") matchTab = !!exp.quote_id;
@@ -129,7 +128,6 @@ export default function OperationalExpenses() {
   const pendientesTotal = allExpenses.filter(e => !e.is_paid).reduce((s, e) => s + (e.amount || 0), 0);
   const recurrentesTotal = allExpenses.filter(e => e.is_recurring).reduce((s, e) => s + (e.amount || 0), 0);
 
-  // Detectar gastos de cotizaciones que aún no están sincronizados
   const unsyncedCount = quotes.reduce((count, quote) => {
     const opItems = (quote.items || []).filter(i => i.is_operational_expense);
     return count + opItems.filter(item => {
@@ -206,8 +204,8 @@ export default function OperationalExpenses() {
   }
 
   const TABS = [
-    { key: "todos", label: "Todos" },
-    { key: "pendientes", label: `Pendientes (${pendientesCount})` },
+    { key: "todos", label: `Pendientes de acción (${pendientesCount})` },
+    { key: "pendientes", label: `Por pagar (${pendientesCount})` },
     { key: "pagados", label: "Pagados" },
     { key: "recurrentes", label: "Recurrentes" },
     { key: "cotizaciones", label: `De Cotizaciones (${quoteLinkedExpenses.length})` },
@@ -306,10 +304,10 @@ export default function OperationalExpenses() {
         {/* Lista */}
         {filtered.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-            <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <TrendingDown className="w-6 h-6 text-slate-400" />
+            <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="w-6 h-6 text-emerald-400" />
             </div>
-            <p className="text-slate-500 font-medium">No hay gastos en esta categoría</p>
+            <p className="text-slate-500 font-medium">¡Todo al día! No hay gastos pendientes de acción</p>
             {unsyncedCount > 0 && (
               <p className="text-xs text-orange-500 mt-2">Hay {unsyncedCount} gastos de cotizaciones sin importar</p>
             )}
@@ -327,7 +325,6 @@ export default function OperationalExpenses() {
                 return (
                   <div key={exp.id || idx} className={`px-5 py-4 flex items-center justify-between gap-4 hover:bg-gray-50/50 ${isPaid ? "opacity-60" : ""}`}>
                     <div className="flex items-center gap-4 min-w-0 flex-1">
-                      {/* Indicador pagado/pendiente */}
                       <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isPaid ? "bg-emerald-50" : "bg-orange-50"}`}>
                         {isPaid
                           ? <CheckCircle className="w-4 h-4 text-emerald-500" />
@@ -442,7 +439,6 @@ export default function OperationalExpenses() {
                 </div>
               </div>
 
-              {/* Recurrente */}
               <div className="border border-gray-100 rounded-xl p-3 space-y-3">
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" checked={form.is_recurring}
@@ -464,7 +460,6 @@ export default function OperationalExpenses() {
                 )}
               </div>
 
-              {/* Pagado */}
               <label className="flex items-center gap-3 cursor-pointer">
                 <input type="checkbox" checked={form.is_paid}
                   onChange={e => setForm(f => ({ ...f, is_paid: e.target.checked }))}
