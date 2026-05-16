@@ -14,6 +14,10 @@
       "type": "string",
       "description": "Cargo o rol dentro de la empresa"
     },
+    "profession": {
+      "type": "string",
+      "description": "Profesi\u00f3n del socio"
+    },
     "equity_percent": {
       "type": "number",
       "description": "Porcentaje de participaci\u00f3n societaria"

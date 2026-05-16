@@ -35,7 +35,7 @@ function isImage(type) {
 }
 
 const emptyDoc = { title: "", description: "", category: "Legal", tags: "", is_important: false };
-const emptyPartner = { full_name: "", rut: "", role: "", equity_percent: "", email: "", phone: "", address: "", notes: "" };
+const emptyPartner = { full_name: "", rut: "", role: "", profession: "", equity_percent: "", email: "", phone: "", address: "", notes: "" };
 
 export default function CompanyDocs() {
   const [docs, setDocs] = useState([]);
@@ -184,6 +184,7 @@ export default function CompanyDocs() {
       full_name: p.full_name || "",
       rut: p.rut || "",
       role: p.role || "",
+      profession: p.profession || "",
       equity_percent: p.equity_percent || "",
       email: p.email || "",
       phone: p.phone || "",
@@ -434,6 +435,12 @@ export default function CompanyDocs() {
                     </div>
 
                     <div className="space-y-2 text-sm">
+                      {p.profession && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-slate-400 w-20 flex-shrink-0">Profesión</span>
+                          <span className="text-slate-700">{p.profession}</span>
+                        </div>
+                      )}
                       {p.rut && (
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-slate-400 w-20 flex-shrink-0">RUT</span>
@@ -596,11 +603,17 @@ export default function CompanyDocs() {
                     value={partnerForm.equity_percent} onChange={e => setPartnerForm(f => ({ ...f, equity_percent: e.target.value }))}
                     placeholder="50" />
                 </div>
-                <div className="col-span-2">
+                <div>
                   <label className="text-xs font-medium text-slate-500 mb-1.5 block">Cargo / Rol</label>
                   <input className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                     value={partnerForm.role} onChange={e => setPartnerForm(f => ({ ...f, role: e.target.value }))}
                     placeholder="Ej: Gerente General, Director Técnico..." />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-500 mb-1.5 block">Profesión</label>
+                  <input className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                    value={partnerForm.profession} onChange={e => setPartnerForm(f => ({ ...f, profession: e.target.value }))}
+                    placeholder="Ej: Ingeniero Civil, Contador..." />
                 </div>
                 <div>
                   <label className="text-xs font-medium text-slate-500 mb-1.5 block">Email</label>
