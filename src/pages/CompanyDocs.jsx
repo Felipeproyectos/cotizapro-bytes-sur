@@ -100,13 +100,25 @@ export default function CompanyDocs() {
     if (!docForm.title && selectedFiles.length === 0) return;
     setSavingDoc(true);
 
-    // If editing a single doc with files selected, update with first file
+    // If editing: update existing doc with first file, create new docs for the rest
     if (editingDoc?.id) {
       let fileData = {};
       if (selectedFiles.length > 0) {
         setUploading(true);
         const { file_url } = await base44.integrations.Core.UploadFile({ file: selectedFiles[0] });
         fileData = { file_url, file_name: selectedFiles[0].name, file_type: selectedFiles[0].type };
+        // Create additional docs for files 2+
+        for (let i = 1; i < selectedFiles.length; i++) {
+          const file = selectedFiles[i];
+          const { file_url: extra_url } = await base44.integrations.Core.UploadFile({ file });
+          await base44.entities.CompanyDocument.create({
+            ...docForm,
+            title: docForm.title || file.name,
+            file_url: extra_url,
+            file_name: file.name,
+            file_type: file.type,
+          });
+        }
         setUploading(false);
       }
       await base44.entities.CompanyDocument.update(editingDoc.id, { ...docForm, ...fileData });
