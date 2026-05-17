@@ -70,9 +70,9 @@ export default function Layout({ children, currentPageName }) {
               <div className="w-28 h-28 rounded-2xl overflow-hidden bg-slate-50 border border-gray-100 flex-shrink-0">
                 <img src={company.logo_url} alt="Logo" className="w-full h-full object-contain p-1" />
               </div>
-              <div className="text-center min-w-0">
-                <p className="text-sm font-bold text-slate-900 truncate leading-tight">{company.company_name}</p>
-                {company.rut && <p className="text-xs text-slate-400 truncate font-mono">{company.rut}</p>}
+              <div className="text-center w-full">
+                <p className="text-sm font-bold text-slate-900 leading-tight text-center break-words">{company.company_name}</p>
+                {company.rut && <p className="text-xs text-slate-400 font-mono text-center">{company.rut}</p>}
               </div>
             </div>
           ) : (
