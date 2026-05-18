@@ -1,0 +1,45 @@
+{
+  "name": "Note",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "T\u00edtulo de la nota"
+    },
+    "content": {
+      "type": "string",
+      "description": "Contenido de la nota"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "General",
+        "Legal",
+        "Financiero",
+        "Clientes",
+        "Interno",
+        "Otro"
+      ],
+      "default": "General"
+    },
+    "is_urgent": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si es una nota urgente / importante"
+    },
+    "color": {
+      "type": "string",
+      "enum": [
+        "amarillo",
+        "azul",
+        "verde",
+        "rojo",
+        "gris"
+      ],
+      "default": "amarillo"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}
