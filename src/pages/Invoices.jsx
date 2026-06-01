@@ -69,32 +69,39 @@ export default function Invoices() {
     if (!form.invoice_number || !form.issue_date) return;
     setSaving(true);
 
-    let existingFiles = editing?.files || [];
-    if (selectedFiles.length > 0) {
-      setUploading(true);
-      for (const file of selectedFiles) {
-        const { file_url } = await base44.integrations.Core.UploadFile({ file });
-        existingFiles = [...existingFiles, { file_url, file_name: file.name, file_type: file.type }];
+    try {
+      let existingFiles = editing?.files || [];
+      if (selectedFiles.length > 0) {
+        setUploading(true);
+        for (const file of selectedFiles) {
+          const { file_url } = await base44.integrations.Core.UploadFile({ file });
+          existingFiles = [...existingFiles, { file_url, file_name: file.name, file_type: file.type }];
+        }
+        setUploading(false);
       }
+
+      const payload = {
+        invoice_number: form.invoice_number,
+        client_name: form.client_name || "",
+        issue_date: form.issue_date,
+        amount: form.amount ? parseFloat(form.amount) : null,
+        notes: form.notes || "",
+        files: existingFiles,
+      };
+
+      if (editing) {
+        await base44.entities.Invoice.update(editing.id, payload);
+      } else {
+        await base44.entities.Invoice.create(payload);
+      }
+
+      setShowForm(false);
+      setEditing(null);
+      await load();
+    } finally {
+      setSaving(false);
       setUploading(false);
     }
-
-    const payload = {
-      ...form,
-      amount: form.amount ? parseFloat(form.amount) : null,
-      files: existingFiles,
-    };
-
-    if (editing) {
-      await base44.entities.Invoice.update(editing.id, payload);
-    } else {
-      await base44.entities.Invoice.create(payload);
-    }
-
-    setSaving(false);
-    setShowForm(false);
-    setEditing(null);
-    load();
   };
 
   const handleDelete = async (id) => {
