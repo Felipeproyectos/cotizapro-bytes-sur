@@ -1,0 +1,51 @@
+{
+  "name": "ServiceType",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nombre del tipo de servicio"
+    },
+    "description": {
+      "type": "string",
+      "description": "Descripci\u00f3n del servicio"
+    },
+    "default_price": {
+      "type": "number",
+      "description": "Precio base sugerido"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Redes",
+        "Software",
+        "Hardware",
+        "Soporte",
+        "Seguridad",
+        "Infraestructura",
+        "Consultor\u00eda",
+        "Producto",
+        "Otro"
+      ],
+      "description": "Categor\u00eda del servicio"
+    },
+    "unit": {
+      "type": "string",
+      "description": "Unidad de medida (hora, unidad, metro, etc.)",
+      "default": "unidad"
+    },
+    "price_per_unit": {
+      "type": "boolean",
+      "default": false,
+      "description": "Si es true, el precio se calcula por unidad/metro"
+    },
+    "active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "name",
+    "category"
+  ]
+}
