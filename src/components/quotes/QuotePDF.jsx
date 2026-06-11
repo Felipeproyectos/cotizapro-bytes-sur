@@ -41,27 +41,18 @@ export default function QuotePDF({ quote, onClose }) {
 
   const handlePrint = () => {
     const html = buildHtml();
-
-    // Use hidden iframe to avoid window.open (works on iOS)
-    let frame = printFrameRef.current;
-    if (!frame) {
-      frame = document.createElement("iframe");
-      frame.style.cssText = "position:fixed;top:0;left:0;width:0;height:0;border:0;opacity:0;";
-      document.body.appendChild(frame);
-      printFrameRef.current = frame;
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const printWin = window.open(url, "_blank");
+    if (printWin) {
+      printWin.onload = () => {
+        setTimeout(() => {
+          printWin.focus();
+          printWin.print();
+        }, 300);
+      };
     }
-    frame.srcdoc = html;
-    frame.onload = () => {
-      try {
-        frame.contentWindow.focus();
-        frame.contentWindow.print();
-      } catch(e) {
-        // fallback for strict browsers: open in new tab
-        const blob = new Blob([html], { type: "text/html" });
-        const url = URL.createObjectURL(blob);
-        window.open(url, "_blank");
-      }
-    };
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   };
 
   const buildHtml = () => {
