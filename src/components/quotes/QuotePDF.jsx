@@ -83,10 +83,11 @@ export default function QuotePDF({ quote, onClose }) {
   @page { size: Letter; margin: 12mm 15mm; }
   * { font-family: Arial, Helvetica, sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
   body { background: white; color: #0f172a; font-size: 13px; }
-  .header { background: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: white; padding: 28px 36px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; }
-  .header-left h1 { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: white; }
+  .header { background: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: white; padding: 28px 36px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: nowrap; gap: 16px; page-break-inside: avoid; break-inside: avoid; }
+  .header-left { flex: 1 1 auto; min-width: 0; }
+  .header-left h1 { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: white; word-break: break-word; }
   .header-left p { font-size: 11px; color: #94a3b8; margin-top: 2px; }
-  .header-right { text-align: right; }
+  .header-right { text-align: right; flex: 0 0 auto; min-width: 160px; }
   .header-right .label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
   .header-right .number { font-size: 18px; font-weight: 700; color: white; }
   .header-right .date { font-size: 11px; color: #94a3b8; margin-top: 3px; }
