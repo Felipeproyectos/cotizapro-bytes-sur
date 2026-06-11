@@ -41,18 +41,18 @@ export default function QuotePDF({ quote, onClose }) {
 
   const handlePrint = () => {
     const html = buildHtml();
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const printWin = window.open(url, "_blank");
-    if (printWin) {
-      printWin.onload = () => {
-        setTimeout(() => {
-          printWin.focus();
-          printWin.print();
-        }, 300);
-      };
+    let frame = printFrameRef.current;
+    if (!frame) {
+      frame = document.createElement("iframe");
+      frame.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:0;";
+      document.body.appendChild(frame);
+      printFrameRef.current = frame;
     }
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    frame.srcdoc = html;
+    frame.onload = () => {
+      frame.contentWindow.focus();
+      frame.contentWindow.print();
+    };
   };
 
   const buildHtml = () => {
