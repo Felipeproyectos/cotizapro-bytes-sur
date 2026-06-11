@@ -78,7 +78,7 @@ export default function QuotePDF({ quote, onClose }) {
 <html><head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Cotización ${quote.quote_number}</title>
+<title>Cotizacion ${company?.company_name || 'Empresa'} - ${quote.quote_number}</title>
 <style>
   @page { size: Letter; margin: 12mm 15mm; }
   * { font-family: Arial, Helvetica, sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
