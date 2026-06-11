@@ -44,7 +44,7 @@ export default function QuotePDF({ quote, onClose }) {
     let frame = printFrameRef.current;
     if (!frame) {
       frame = document.createElement("iframe");
-      frame.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:0;";
+      frame.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;border:0;visibility:hidden;";
       document.body.appendChild(frame);
       printFrameRef.current = frame;
     }
