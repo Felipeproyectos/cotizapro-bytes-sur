@@ -41,19 +41,24 @@ export default function QuotePDF({ quote, onClose }) {
 
   const handlePrint = () => {
     const html = buildHtml();
-    const fileName = `Cotizacion_${(company?.company_name || 'Empresa').replace(/\s+/g, '_')}_${quote.quote_number}.pdf`;
+    const fileName = `Cotizacion_${(company?.company_name || 'Empresa').replace(/\s+/g, '_')}_${quote.quote_number}`;
 
-    // Abrimos en nueva pestaña con título controlado para que el navegador proponga el nombre correcto al guardar PDF
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const win = window.open(url, "_blank");
-    if (win) {
-      win.onload = () => {
-        win.document.title = fileName.replace(".pdf", "");
-        win.print();
-        setTimeout(() => URL.revokeObjectURL(url), 5000);
-      };
-    }
+    // Crear iframe oculto para imprimir sin abrir nueva pestaña
+    const existing = document.getElementById("print-frame-quote");
+    if (existing) existing.remove();
+
+    const frame = document.createElement("iframe");
+    frame.id = "print-frame-quote";
+    frame.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;border:0;visibility:hidden;";
+    document.body.appendChild(frame);
+
+    frame.srcdoc = html;
+    frame.onload = () => {
+      frame.contentWindow.document.title = fileName;
+      frame.contentWindow.focus();
+      frame.contentWindow.print();
+      setTimeout(() => frame.remove(), 2000);
+    };
   };
 
   const buildHtml = () => {
