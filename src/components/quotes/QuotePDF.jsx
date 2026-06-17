@@ -90,10 +90,10 @@ export default function QuotePDF({ quote, onClose }) {
   * { font-family: Arial, Helvetica, sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
   body { background: white; color: #0f172a; font-size: 13px; }
   .header { background: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: white; padding: 28px 36px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: nowrap; gap: 16px; page-break-inside: avoid; break-inside: avoid; }
-  .header-left { flex: 1 1 auto; min-width: 0; }
-  .header-left h1 { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: white; word-break: break-word; }
-  .header-left p { font-size: 11px; color: #94a3b8; margin-top: 2px; }
-  .header-right { text-align: right; flex: 0 0 auto; min-width: 160px; }
+  .header-left { flex: 1 1 auto; min-width: 0; max-width: 55%; overflow: hidden; }
+  .header-left h1 { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: white; word-break: break-word; overflow-wrap: break-word; white-space: normal; }
+  .header-left p { font-size: 11px; color: #94a3b8; margin-top: 2px; word-break: break-word; overflow-wrap: break-word; }
+  .header-right { text-align: right; flex: 0 0 auto; min-width: 160px; max-width: 42%; word-break: break-word; overflow-wrap: break-word; }
   .header-right .label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
   .header-right .number { font-size: 18px; font-weight: 700; color: white; }
   .header-right .date { font-size: 11px; color: #94a3b8; margin-top: 3px; }
@@ -138,7 +138,7 @@ export default function QuotePDF({ quote, onClose }) {
   <div class="header-right">
     <div class="label">${isHonorariosLocal ? "Boleta de Honorarios" : "Cotización"}</div>
     <div class="number">${quote.quote_number}</div>
-    ${quote.title ? `<div style="color:#cbd5e1;font-size:12px;margin-top:3px;">${quote.title}</div>` : ""}
+    ${quote.title ? `<div style="color:#cbd5e1;font-size:12px;margin-top:3px;word-break:break-word;overflow-wrap:break-word;">${quote.title}</div>` : ""}
     <div class="date">${format(new Date(quote.created_date), "dd 'de' MMMM, yyyy", { locale: es })}</div>
     ${quote.valid_until ? `<div class="date">Válida hasta: ${format(new Date(quote.valid_until), "dd MMM yyyy", { locale: es })}</div>` : ""}
     ${isMensualLocal ? `<div style="display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;margin-top:8px;background:#7c3aed33;color:#a78bfa;">🔄 SERVICIO MENSUAL · Cobro día ${quote.billing_day || "—"} de cada mes</div>` : ""}
