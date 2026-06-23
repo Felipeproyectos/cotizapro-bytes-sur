@@ -16,6 +16,7 @@ import {
   FolderOpen,
   StickyNote,
   Receipt,
+  ShoppingCart,
 } from "lucide-react";
 
 const navItems = [
@@ -26,11 +27,12 @@ const navItems = [
   { name: "Servicios", page: "Services", icon: Wifi },
   { name: "Documentación", page: "CompanyDocs", icon: FolderOpen },
   { name: "Facturas Emitidas", page: "Invoices", icon: Receipt },
+  { name: "Compras", page: "Purchases", icon: ShoppingCart },
   { name: "Notas", page: "Notes", icon: StickyNote },
   { name: "Configuración", page: "Settings", icon: Settings },
 ];
 
-const ROOT_PAGES = ["Dashboard", "Quotes", "History", "OperationalExpenses", "Services", "Settings", "CompanyDocs", "Invoices", "Notes"];
+const ROOT_PAGES = ["Dashboard", "Quotes", "History", "OperationalExpenses", "Services", "Settings", "CompanyDocs", "Invoices", "Purchases", "Notes"];
 
 export default function Layout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);

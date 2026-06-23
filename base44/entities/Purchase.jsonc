@@ -1,0 +1,68 @@
+{
+  "name": "Purchase",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Descripci\u00f3n de la compra"
+    },
+    "supplier": {
+      "type": "string",
+      "description": "Proveedor"
+    },
+    "purchase_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha de la compra"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Monto en CLP"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Materiales",
+        "Herramientas",
+        "Software",
+        "Servicios",
+        "Equipos",
+        "Otro"
+      ],
+      "description": "Categor\u00eda de la compra"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notas adicionales"
+    },
+    "files": {
+      "type": "array",
+      "description": "Documentos adjuntos (PDFs, boletas, facturas)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file_url": {
+            "type": "string"
+          },
+          "file_name": {
+            "type": "string"
+          },
+          "file_type": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "title",
+    "purchase_date",
+    "amount"
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {},
+    "delete": {}
+  }
+}
