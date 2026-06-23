@@ -90,9 +90,10 @@ export default function QuotePDF({ quote, onClose }) {
   * { font-family: Arial, Helvetica, sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
   body { background: white; color: #0f172a; font-size: 13px; }
   .header { background: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: white; padding: 28px 36px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: nowrap; gap: 16px; page-break-inside: avoid; break-inside: avoid; }
-  .header-left { flex: 1 1 auto; min-width: 0; max-width: 55%; overflow: hidden; }
-  .header-left h1 { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: white; word-break: break-word; overflow-wrap: break-word; white-space: normal; }
-  .header-left p { font-size: 11px; color: #94a3b8; margin-top: 2px; word-break: break-word; overflow-wrap: break-word; }
+  .header-left { flex: 1 1 auto; min-width: 0; max-width: 55%; overflow: hidden; display: flex; flex-direction: column; gap: 10px; }
+  .header-left .logo-wrap { display: block; }
+  .header-left .company-info h1 { font-size: 15px; font-weight: 700; margin-bottom: 5px; color: white; word-break: break-word; overflow-wrap: break-word; white-space: normal; line-height: 1.3; }
+  .header-left .company-info p { font-size: 10.5px; color: #94a3b8; margin-top: 2px; word-break: break-word; overflow-wrap: break-word; }
   .header-right { text-align: right; flex: 0 0 auto; min-width: 160px; max-width: 42%; word-break: break-word; overflow-wrap: break-word; }
   .header-right .label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
   .header-right .number { font-size: 18px; font-weight: 700; color: white; }
@@ -128,12 +129,14 @@ export default function QuotePDF({ quote, onClose }) {
 </head><body>
 <div class="header">
   <div class="header-left">
-    ${company?.logo_url ? `<img src="${company.logo_url}" alt="Logo" style="max-height:90px;max-width:200px;object-fit:contain;margin-bottom:10px;display:block;" />` : ""}
-    <h1>${company?.company_name || "Mi Empresa"}</h1>
-    ${company?.rut ? `<p>RUT: ${company.rut}</p>` : ""}
-    ${company?.address ? `<p>${company.address}</p>` : ""}
-    ${company?.phone ? `<p>${company.phone}</p>` : ""}
-    ${company?.email ? `<p>${company.email}</p>` : ""}
+    ${company?.logo_url ? `<div class="logo-wrap"><img src="${company.logo_url}" alt="Logo" style="max-height:90px;max-width:200px;object-fit:contain;display:block;" /></div>` : ""}
+    <div class="company-info">
+      <h1>${company?.company_name || "Mi Empresa"}</h1>
+      ${company?.rut ? `<p>RUT: ${company.rut}</p>` : ""}
+      ${company?.address ? `<p>${company.address}</p>` : ""}
+      ${company?.phone ? `<p>${company.phone}</p>` : ""}
+      ${company?.email ? `<p>${company.email}</p>` : ""}
+    </div>
   </div>
   <div class="header-right">
     <div class="label">${isHonorariosLocal ? "Boleta de Honorarios" : "Cotización"}</div>
@@ -295,15 +298,17 @@ ${quote.notes ? `<div class="notes"><div class="section-title">Notas y Condicion
           {/* Header */}
           <div style={{ background: "#0f172a" }} className="px-10 py-8 text-white">
             <div className="flex items-start justify-between">
-              <div>
+              <div className="flex flex-col gap-3 max-w-[55%]">
                 {company?.logo_url && (
-                  <img src={company.logo_url} alt="Logo" className="max-h-24 max-w-48 object-contain mb-3" />
+                  <img src={company.logo_url} alt="Logo" className="max-h-24 max-w-48 object-contain" />
                 )}
-                <h1 className="text-xl font-bold tracking-tight">{company?.company_name || "Mi Empresa"}</h1>
-                {company?.rut && <p className="text-slate-400 text-xs mt-1">RUT: {company.rut}</p>}
-                {company?.address && <p className="text-slate-400 text-xs">{company.address}</p>}
-                {company?.phone && <p className="text-slate-400 text-xs">{company.phone}</p>}
-                {company?.email && <p className="text-slate-400 text-xs">{company.email}</p>}
+                <div>
+                  <h1 className="text-base font-bold leading-snug">{company?.company_name || "Mi Empresa"}</h1>
+                  {company?.rut && <p className="text-slate-400 text-xs mt-1">RUT: {company.rut}</p>}
+                  {company?.address && <p className="text-slate-400 text-xs">{company.address}</p>}
+                  {company?.phone && <p className="text-slate-400 text-xs">{company.phone}</p>}
+                  {company?.email && <p className="text-slate-400 text-xs">{company.email}</p>}
+                </div>
               </div>
               <div className="text-right">
                 <p className="text-slate-400 text-xs uppercase tracking-widest mb-1">
