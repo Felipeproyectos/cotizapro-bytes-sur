@@ -128,7 +128,7 @@ export default function QuotePDF({ quote, onClose }) {
 </head><body>
 <div class="header">
   <div class="header-left">
-    ${company?.logo_url ? `<img src="${company.logo_url}" alt="Logo" style="max-height:52px;max-width:140px;object-fit:contain;margin-bottom:8px;display:block;" />` : ""}
+    ${company?.logo_url ? `<img src="${company.logo_url}" alt="Logo" style="max-height:90px;max-width:200px;object-fit:contain;margin-bottom:10px;display:block;" />` : ""}
     <h1>${company?.company_name || "Mi Empresa"}</h1>
     ${company?.rut ? `<p>RUT: ${company.rut}</p>` : ""}
     ${company?.address ? `<p>${company.address}</p>` : ""}
@@ -297,7 +297,7 @@ ${quote.notes ? `<div class="notes"><div class="section-title">Notas y Condicion
             <div className="flex items-start justify-between">
               <div>
                 {company?.logo_url && (
-                  <img src={company.logo_url} alt="Logo" className="max-h-12 max-w-32 object-contain mb-2" />
+                  <img src={company.logo_url} alt="Logo" className="max-h-24 max-w-48 object-contain mb-3" />
                 )}
                 <h1 className="text-xl font-bold tracking-tight">{company?.company_name || "Mi Empresa"}</h1>
                 {company?.rut && <p className="text-slate-400 text-xs mt-1">RUT: {company.rut}</p>}
