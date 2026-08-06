@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Plus, Trash2, Edit2, FileText, Upload, X, Loader2, Download } from "lucide-react";
+import { Plus, Trash2, Edit2, FileText, Upload, X, Loader2, Download, CheckCircle2, Circle, History, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -14,6 +14,8 @@ const EMPTY = {
   purchase_date: "",
   amount: "",
   category: "Otro",
+  rendido: false,
+  rendido_date: "",
   notes: "",
   files: [],
 };
@@ -29,6 +31,8 @@ export default function Purchases() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState("por_rendir");
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     load();
@@ -56,7 +60,12 @@ export default function Purchases() {
   const handleSave = async () => {
     if (!form.title || !form.purchase_date || !form.amount) return;
     setSaving(true);
-    const payload = { ...form, amount: parseFloat(form.amount) || 0 };
+    const payload = {
+      ...form,
+      amount: parseFloat(form.amount) || 0,
+      rendido: !!form.rendido,
+      rendido_date: form.rendido ? (form.rendido_date || new Date().toISOString().split("T")[0]) : "",
+    };
     if (editing) {
       await base44.entities.Purchase.update(editing, payload);
     } else {
@@ -64,6 +73,15 @@ export default function Purchases() {
     }
     setSaving(false);
     setShowForm(false);
+    load();
+  };
+
+  const toggleRendido = async (p) => {
+    const rendido = !p.rendido;
+    await base44.entities.Purchase.update(p.id, {
+      rendido,
+      rendido_date: rendido ? new Date().toISOString().split("T")[0] : "",
+    });
     load();
   };
 
@@ -90,13 +108,102 @@ export default function Purchases() {
     setForm((f) => ({ ...f, files: f.files.filter((_, i) => i !== idx) }));
   };
 
-  const filtered = purchases.filter(
-    (p) =>
+  const filtered = purchases.filter((p) => {
+    const matchTab = activeTab === "rendido" ? !!p.rendido : !p.rendido;
+    const matchSearch =
       p.title?.toLowerCase().includes(search.toLowerCase()) ||
-      p.supplier?.toLowerCase().includes(search.toLowerCase())
-  );
+      p.supplier?.toLowerCase().includes(search.toLowerCase());
+    return matchTab && matchSearch;
+  });
+
+  const now = new Date();
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const monthKey = (p) => {
+    if (!p.purchase_date) return "";
+    const d = new Date(p.purchase_date + "T12:00:00");
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  };
+
+  const currentMonth = filtered.filter((p) => monthKey(p) === currentMonthKey);
+  const history = filtered.filter((p) => monthKey(p) !== currentMonthKey);
+
+  const historyGrouped = history.reduce((acc, p) => {
+    const key = monthKey(p);
+    if (!key) return acc;
+    const d = new Date(p.purchase_date + "T12:00:00");
+    const label = format(d, "MMMM yyyy", { locale: es });
+    if (!acc.find((g) => g.key === key)) acc.push({ key, label, items: [] });
+    acc.find((g) => g.key === key).items.push(p);
+    return acc;
+  }, []);
 
   const total = filtered.reduce((s, p) => s + (p.amount || 0), 0);
+  const currentTotal = currentMonth.reduce((s, p) => s + (p.amount || 0), 0);
+  const countRendido = purchases.filter((p) => p.rendido).length;
+  const countPorRendir = purchases.filter((p) => !p.rendido).length;
+
+  const renderCard = (p) => (
+    <div key={p.id} className={`bg-white border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 ${p.rendido ? "border-emerald-200 bg-emerald-50/30" : "border-gray-200"}`}>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <p className="font-semibold text-slate-900 truncate">{p.title}</p>
+          {p.category && (
+            <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{p.category}</span>
+          )}
+          {p.rendido && (
+            <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" /> Rendido
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-3 mt-1 flex-wrap">
+          {p.supplier && <p className="text-xs text-slate-500">{p.supplier}</p>}
+          {p.purchase_date && (
+            <p className="text-xs text-slate-400">
+              {format(new Date(p.purchase_date), "dd MMM yyyy", { locale: es })}
+            </p>
+          )}
+          {(p.files || []).length > 0 && (
+            <span className="text-xs text-blue-600 flex items-center gap-1">
+              <FileText className="w-3 h-3" /> {p.files.length} archivo{p.files.length > 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+        {(p.files || []).length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {p.files.map((f, i) => (
+              <a
+                key={i}
+                href={f.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-1 rounded-lg transition-colors"
+              >
+                <Download className="w-3 h-3" />
+                {f.file_name || "Archivo"}
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="flex items-center gap-3">
+        <p className="font-bold text-slate-900 text-base">{fmtCLP(p.amount)}</p>
+        <button
+          onClick={() => toggleRendido(p)}
+          title={p.rendido ? "Marcar como por rendir" : "Marcar como rendido"}
+          className={`p-1.5 rounded-lg ${p.rendido ? "hover:bg-emerald-100 text-emerald-600" : "hover:bg-amber-100 text-amber-500"}`}
+        >
+          {p.rendido ? <CheckCircle2 className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+        </button>
+        <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500">
+          <Edit2 className="w-4 h-4" />
+        </button>
+        <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-400">
+          <Trash2 className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -108,6 +215,22 @@ export default function Purchases() {
         <Button onClick={openNew} className="bg-slate-900 hover:bg-slate-800 text-white gap-2">
           <Plus className="w-4 h-4" /> Nueva Compra
         </Button>
+      </div>
+
+      {/* Tabs: Por Rendir / Rendido */}
+      <div className="flex gap-2 mb-5">
+        <button
+          onClick={() => { setActiveTab("por_rendir"); setShowHistory(false); }}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${activeTab === "por_rendir" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"}`}
+        >
+          <Circle className="w-4 h-4" /> Por Rendir ({countPorRendir})
+        </button>
+        <button
+          onClick={() => { setActiveTab("rendido"); setShowHistory(false); }}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${activeTab === "rendido" ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"}`}
+        >
+          <CheckCircle2 className="w-4 h-4" /> Rendido ({countRendido})
+        </button>
       </div>
 
       {/* Search + Summary */}
@@ -130,62 +253,64 @@ export default function Purchases() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-slate-400">
           <FileText className="w-10 h-10 mx-auto mb-3 opacity-40" />
-          <p className="font-medium">Sin compras registradas</p>
+          <p className="font-medium">Sin compras en esta categoría</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filtered.map((p) => (
-            <div key={p.id} className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-semibold text-slate-900 truncate">{p.title}</p>
-                  {p.category && (
-                    <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{p.category}</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-3 mt-1 flex-wrap">
-                  {p.supplier && <p className="text-xs text-slate-500">{p.supplier}</p>}
-                  {p.purchase_date && (
-                    <p className="text-xs text-slate-400">
-                      {format(new Date(p.purchase_date), "dd MMM yyyy", { locale: es })}
-                    </p>
-                  )}
-                  {(p.files || []).length > 0 && (
-                    <span className="text-xs text-blue-600 flex items-center gap-1">
-                      <FileText className="w-3 h-3" /> {p.files.length} archivo{p.files.length > 1 ? "s" : ""}
-                    </span>
-                  )}
-                </div>
-                {/* Files */}
-                {(p.files || []).length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {p.files.map((f, i) => (
-                      <a
-                        key={i}
-                        href={f.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-1 rounded-lg transition-colors"
-                      >
-                        <Download className="w-3 h-3" />
-                        {f.file_name || "Archivo"}
-                      </a>
-                    ))}
-                  </div>
-                )}
+        <>
+          {/* Mes actual */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className={`inline-block w-2 h-2 rounded-full ${activeTab === "rendido" ? "bg-emerald-500" : "bg-amber-500"}`} />
+                <h2 className="text-sm font-bold text-slate-900 capitalize">
+                  {format(now, "MMMM yyyy", { locale: es })} — Mes actual
+                </h2>
+                <span className="text-xs text-slate-400">({currentMonth.length})</span>
               </div>
-              <div className="flex items-center gap-3">
-                <p className="font-bold text-slate-900 text-base">{fmtCLP(p.amount)}</p>
-                <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-500">
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button onClick={() => handleDelete(p.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-400">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+              <span className="text-sm font-semibold text-slate-700">Total: {fmtCLP(currentTotal)}</span>
             </div>
-          ))}
-        </div>
+            {currentMonth.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
+                <p className="text-slate-400 text-sm">No hay compras este mes</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {currentMonth.map((p) => renderCard(p))}
+              </div>
+            )}
+          </div>
+
+          {/* Historial */}
+          {historyGrouped.length > 0 && (
+            <div className="mt-6">
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900 mb-3"
+              >
+                <History className="w-4 h-4" />
+                Historial ({history.length})
+                {showHistory ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+              </button>
+              {showHistory && (
+                <div className="space-y-5">
+                  {historyGrouped.map((group) => (
+                    <div key={group.key}>
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider capitalize">
+                          {group.label}
+                        </h3>
+                        <span className="text-xs text-slate-400">{group.items.length} compra(s) · {fmtCLP(group.items.reduce((s, p) => s + (p.amount || 0), 0))}</span>
+                      </div>
+                      <div className="space-y-3">
+                        {group.items.map((p) => renderCard(p))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {/* Modal Form */}
@@ -227,6 +352,25 @@ export default function Purchases() {
                   >
                     {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                   </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-500 mb-1 block">Estado de rendición</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, rendido: false, rendido_date: "" })}
+                    className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border transition-colors ${!form.rendido ? "bg-amber-500 text-white border-amber-500" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"}`}
+                  >
+                    Por Rendir
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, rendido: true, rendido_date: form.rendido_date || new Date().toISOString().split("T")[0] })}
+                    className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border transition-colors ${form.rendido ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"}`}
+                  >
+                    Rendido
+                  </button>
                 </div>
               </div>
               <div>
