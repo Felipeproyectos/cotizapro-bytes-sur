@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import {
   Plus, Search, Trash2, Pencil, X, Upload, FileText,
-  ExternalLink, Calendar, ChevronDown
+  ExternalLink, Calendar, ChevronDown, ChevronRight, History, RefreshCw
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -12,6 +12,7 @@ const DEFAULT_FORM = {
   client_name: "",
   issue_date: "",
   amount: "",
+  billing_type: "Único",
   notes: "",
 };
 
@@ -36,6 +37,8 @@ export default function Invoices() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState("Único");
+  const [showHistory, setShowHistory] = useState(false);
 
   const load = async () => {
     const data = await base44.entities.Invoice.list("-issue_date");
@@ -59,6 +62,7 @@ export default function Invoices() {
       client_name: inv.client_name || "",
       issue_date: inv.issue_date || "",
       amount: inv.amount || "",
+      billing_type: inv.billing_type || "Único",
       notes: inv.notes || "",
     });
     setSelectedFiles([]);
@@ -85,6 +89,7 @@ export default function Invoices() {
         client_name: form.client_name || "",
         issue_date: form.issue_date,
         amount: form.amount ? parseFloat(form.amount) : null,
+        billing_type: form.billing_type || "Único",
         notes: form.notes || "",
         files: existingFiles,
       };
@@ -116,14 +121,46 @@ export default function Invoices() {
     load();
   };
 
+  const now = new Date();
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
   const filtered = invoices.filter(inv => {
+    const matchTab = (inv.billing_type || "Único") === activeTab;
     const matchSearch = !search ||
       inv.invoice_number?.toLowerCase().includes(search.toLowerCase()) ||
       inv.client_name?.toLowerCase().includes(search.toLowerCase());
     const matchFrom = !dateFrom || inv.issue_date >= dateFrom;
     const matchTo = !dateTo || inv.issue_date <= dateTo;
-    return matchSearch && matchFrom && matchTo;
+    return matchTab && matchSearch && matchFrom && matchTo;
   });
+
+  // Separar en mes actual e historial
+  const currentMonthInvoices = filtered.filter(inv => {
+    if (!inv.issue_date) return false;
+    const d = new Date(inv.issue_date + "T12:00:00");
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    return key === currentMonthKey;
+  });
+
+  const historyInvoices = filtered.filter(inv => {
+    if (!inv.issue_date) return false;
+    const d = new Date(inv.issue_date + "T12:00:00");
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    return key !== currentMonthKey;
+  });
+
+  // Agrupar historial por mes
+  const historyGrouped = historyInvoices.reduce((acc, inv) => {
+    const d = new Date(inv.issue_date + "T12:00:00");
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const label = format(d, "MMMM yyyy", { locale: es });
+    if (!acc.find(g => g.key === key)) acc.push({ key, label, items: [] });
+    acc.find(g => g.key === key).items.push(inv);
+    return acc;
+  }, []);
+
+  const tabCount = (type) => invoices.filter(inv => (inv.billing_type || "Único") === type).length;
+  const currentTotal = currentMonthInvoices.reduce((s, inv) => s + (inv.amount || 0), 0);
 
   const formatCLP = (n) => n ? `$${Math.round(n).toLocaleString("es-CL")}` : "-";
 
@@ -142,6 +179,22 @@ export default function Invoices() {
             className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors"
           >
             <Plus className="w-4 h-4" /> Nueva Factura
+          </button>
+        </div>
+
+        {/* Tabs: Pago Único / Mensualidades */}
+        <div className="flex gap-2 mb-5">
+          <button
+            onClick={() => { setActiveTab("Único"); setShowHistory(false); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${activeTab === "Único" ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"}`}
+          >
+            <FileText className="w-4 h-4" /> Pago Único ({tabCount("Único")})
+          </button>
+          <button
+            onClick={() => { setActiveTab("Mensual"); setShowHistory(false); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${activeTab === "Mensual" ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"}`}
+          >
+            <RefreshCw className="w-4 h-4" /> Mensualidades ({tabCount("Mensual")})
           </button>
         </div>
 
@@ -194,57 +247,155 @@ export default function Invoices() {
             </button>
           </div>
         ) : (
-          <div className="space-y-2">
-            {filtered.map(inv => (
-              <div key={inv.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4 hover:border-gray-200 transition-all">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                      <p className="text-sm font-bold text-slate-900">{inv.invoice_number}</p>
-                      {inv.client_name && <span className="text-xs text-slate-500">· {inv.client_name}</span>}
-                    </div>
-                    <div className="flex items-center gap-3 mt-1 flex-wrap">
-                      {inv.issue_date && (
-                        <p className="text-xs text-slate-400">
-                          {format(new Date(inv.issue_date + "T12:00:00"), "dd MMM yyyy", { locale: es })}
-                        </p>
-                      )}
-                      {inv.amount && (
-                        <p className="text-xs font-semibold text-slate-700">{formatCLP(inv.amount)}</p>
-                      )}
-                    </div>
-                    {inv.notes && <p className="text-xs text-slate-400 mt-1">{inv.notes}</p>}
-                    {/* Archivos adjuntos */}
-                    {(inv.files || []).length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {inv.files.map((f, i) => (
-                          <div key={i} className="flex items-center gap-1.5 bg-slate-50 border border-gray-100 rounded-lg px-2.5 py-1.5">
-                            {fileIcon(f.file_type)}
-                            <a href={f.file_url} target="_blank" rel="noopener noreferrer"
-                              className="text-xs text-blue-600 hover:text-blue-800 max-w-[120px] truncate font-medium flex items-center gap-1">
-                              {f.file_name}
-                              <ExternalLink className="w-3 h-3 shrink-0" />
-                            </a>
-                            <button onClick={() => removeFile(inv, i)} className="ml-1 text-slate-300 hover:text-red-400">
-                              <X className="w-3 h-3" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={() => openEdit(inv)} className="p-2 hover:bg-gray-100 rounded-lg" title="Editar">
-                      <Pencil className="w-4 h-4 text-slate-400" />
-                    </button>
-                    <button onClick={() => handleDelete(inv.id)} className="p-2 hover:bg-red-50 rounded-lg" title="Eliminar">
-                      <Trash2 className="w-4 h-4 text-red-400" />
-                    </button>
-                  </div>
+          <>
+            {/* Mes actual */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+                  <h2 className="text-sm font-bold text-slate-900 capitalize">
+                    {format(now, "MMMM yyyy", { locale: es })} — Mes actual
+                  </h2>
+                  <span className="text-xs text-slate-400">({currentMonthInvoices.length})</span>
                 </div>
+                <span className="text-sm font-semibold text-slate-700">Total: {formatCLP(currentTotal)}</span>
               </div>
-            ))}
-          </div>
+              {currentMonthInvoices.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
+                  <p className="text-slate-400 text-sm">No hay facturas este mes</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {currentMonthInvoices.map(inv => (
+                    <div key={inv.id} className="bg-white rounded-2xl border border-emerald-100 px-5 py-4 hover:border-emerald-200 transition-all">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2.5 flex-wrap">
+                            <p className="text-sm font-bold text-slate-900">{inv.invoice_number}</p>
+                            {inv.client_name && <span className="text-xs text-slate-500">· {inv.client_name}</span>}
+                          </div>
+                          <div className="flex items-center gap-3 mt-1 flex-wrap">
+                            {inv.issue_date && (
+                              <p className="text-xs text-slate-400">
+                                {format(new Date(inv.issue_date + "T12:00:00"), "dd MMM yyyy", { locale: es })}
+                              </p>
+                            )}
+                            {inv.amount && (
+                              <p className="text-xs font-semibold text-slate-700">{formatCLP(inv.amount)}</p>
+                            )}
+                          </div>
+                          {inv.notes && <p className="text-xs text-slate-400 mt-1">{inv.notes}</p>}
+                          {(inv.files || []).length > 0 && (
+                            <div className="flex flex-wrap gap-2 mt-2">
+                              {inv.files.map((f, i) => (
+                                <div key={i} className="flex items-center gap-1.5 bg-slate-50 border border-gray-100 rounded-lg px-2.5 py-1.5">
+                                  {fileIcon(f.file_type)}
+                                  <a href={f.file_url} target="_blank" rel="noopener noreferrer"
+                                    className="text-xs text-blue-600 hover:text-blue-800 max-w-[120px] truncate font-medium flex items-center gap-1">
+                                    {f.file_name}
+                                    <ExternalLink className="w-3 h-3 shrink-0" />
+                                  </a>
+                                  <button onClick={() => removeFile(inv, i)} className="ml-1 text-slate-300 hover:text-red-400">
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button onClick={() => openEdit(inv)} className="p-2 hover:bg-gray-100 rounded-lg" title="Editar">
+                            <Pencil className="w-4 h-4 text-slate-400" />
+                          </button>
+                          <button onClick={() => handleDelete(inv.id)} className="p-2 hover:bg-red-50 rounded-lg" title="Eliminar">
+                            <Trash2 className="w-4 h-4 text-red-400" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Historial */}
+            {historyGrouped.length > 0 && (
+              <div className="mt-6">
+                <button
+                  onClick={() => setShowHistory(!showHistory)}
+                  className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900 mb-3"
+                >
+                  <History className="w-4 h-4" />
+                  Historial ({historyInvoices.length})
+                  {showHistory ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                </button>
+                {showHistory && (
+                  <div className="space-y-5">
+                    {historyGrouped.map(group => (
+                      <div key={group.key}>
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider capitalize">
+                            {group.label}
+                          </h3>
+                          <span className="text-xs text-slate-400">{group.items.length} factura(s)</span>
+                        </div>
+                        <div className="space-y-2">
+                          {group.items.map(inv => (
+                            <div key={inv.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4 hover:border-gray-200 transition-all opacity-90">
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2.5 flex-wrap">
+                                    <p className="text-sm font-bold text-slate-900">{inv.invoice_number}</p>
+                                    {inv.client_name && <span className="text-xs text-slate-500">· {inv.client_name}</span>}
+                                  </div>
+                                  <div className="flex items-center gap-3 mt-1 flex-wrap">
+                                    {inv.issue_date && (
+                                      <p className="text-xs text-slate-400">
+                                        {format(new Date(inv.issue_date + "T12:00:00"), "dd MMM yyyy", { locale: es })}
+                                      </p>
+                                    )}
+                                    {inv.amount && (
+                                      <p className="text-xs font-semibold text-slate-700">{formatCLP(inv.amount)}</p>
+                                    )}
+                                  </div>
+                                  {inv.notes && <p className="text-xs text-slate-400 mt-1">{inv.notes}</p>}
+                                  {(inv.files || []).length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                      {inv.files.map((f, i) => (
+                                        <div key={i} className="flex items-center gap-1.5 bg-slate-50 border border-gray-100 rounded-lg px-2.5 py-1.5">
+                                          {fileIcon(f.file_type)}
+                                          <a href={f.file_url} target="_blank" rel="noopener noreferrer"
+                                            className="text-xs text-blue-600 hover:text-blue-800 max-w-[120px] truncate font-medium flex items-center gap-1">
+                                            {f.file_name}
+                                            <ExternalLink className="w-3 h-3 shrink-0" />
+                                          </a>
+                                          <button onClick={() => removeFile(inv, i)} className="ml-1 text-slate-300 hover:text-red-400">
+                                            <X className="w-3 h-3" />
+                                          </button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button onClick={() => openEdit(inv)} className="p-2 hover:bg-gray-100 rounded-lg" title="Editar">
+                                    <Pencil className="w-4 h-4 text-slate-400" />
+                                  </button>
+                                  <button onClick={() => handleDelete(inv.id)} className="p-2 hover:bg-red-50 rounded-lg" title="Eliminar">
+                                    <Trash2 className="w-4 h-4 text-red-400" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -297,6 +448,21 @@ export default function Invoices() {
                   value={form.amount}
                   onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
                 />
+              </div>
+              <div className="col-span-2">
+                <label className="text-xs font-medium text-slate-600 block mb-1">Tipo de cobro</label>
+                <div className="flex gap-2">
+                  {["Único", "Mensual"].map(type => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, billing_type: type }))}
+                      className={`flex-1 px-4 py-2.5 rounded-xl text-sm font-medium border transition-colors ${form.billing_type === type ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"}`}
+                    >
+                      {type === "Único" ? "Pago Único" : "Mensualidad"}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div>
                 <label className="text-xs font-medium text-slate-600 block mb-1">Notas</label>

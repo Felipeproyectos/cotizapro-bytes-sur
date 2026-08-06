@@ -19,6 +19,15 @@
       "type": "number",
       "description": "Monto de la factura en CLP"
     },
+    "billing_type": {
+      "type": "string",
+      "enum": [
+        "\u00danico",
+        "Mensual"
+      ],
+      "default": "\u00danico",
+      "description": "Tipo de cobro: pago \u00fanico o mensualidad"
+    },
     "notes": {
       "type": "string",
       "description": "Notas adicionales"
