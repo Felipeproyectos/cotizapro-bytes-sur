@@ -22,6 +22,7 @@ export default function Services() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(null); // null = closed, {} = new, {id} = editing
   const [saving, setSaving] = useState(false);
+  const [filterCat, setFilterCat] = useState("Todas");
 
   const load = async () => {
     const data = await base44.entities.ServiceType.list("name");
@@ -49,6 +50,10 @@ export default function Services() {
     await base44.entities.ServiceType.delete(id);
     load();
   };
+
+  const categories = ["Todas", ...CATEGORIES.filter(c => services.some(s => s.category === c))];
+  const filteredServices = filterCat === "Todas" ? services : services.filter(s => s.category === filterCat);
+  const countByCat = (cat) => cat === "Todas" ? services.length : services.filter(s => s.category === cat).length;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 md:p-8">
@@ -175,14 +180,32 @@ export default function Services() {
             <div className="w-6 h-6 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <div className="space-y-2">
-            {services.length === 0 && (
-              <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
-                <Tag className="w-8 h-8 text-slate-300 mx-auto mb-3" />
-                <p className="text-sm text-slate-400">No hay servicios aún. Crea el primero.</p>
+          <>
+            {/* Category filter */}
+            {services.length > 0 && (
+              <div className="flex gap-2 flex-wrap mb-4">
+                {categories.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setFilterCat(cat)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${filterCat === cat ? (CATEGORY_COLORS[cat] || "bg-slate-900 text-white border-slate-900") : "bg-white text-slate-500 border-gray-200 hover:border-gray-300"}`}
+                  >
+                    {cat}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${filterCat === cat ? "bg-white/20" : "bg-slate-100 text-slate-400"}`}>
+                      {countByCat(cat)}
+                    </span>
+                  </button>
+                ))}
               </div>
             )}
-            {services.map(s => (
+            <div className="space-y-2">
+            {filteredServices.length === 0 && (
+              <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+                <Tag className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+                <p className="text-sm text-slate-400">No hay servicios en esta categoría.</p>
+              </div>
+            )}
+            {filteredServices.map(s => (
               <div key={s.id} className="bg-white rounded-2xl border border-gray-100 px-5 py-4 flex items-center gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
@@ -207,7 +230,8 @@ export default function Services() {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          </>
         )}
       </div>
     </div>
