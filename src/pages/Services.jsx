@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Plus, Pencil, Trash2, Check, X, Tag, PencilLine } from "lucide-react";
 
@@ -23,6 +23,16 @@ export default function Services() {
   const [form, setForm] = useState(null); // null = closed, {} = new, {id} = editing
   const [saving, setSaving] = useState(false);
   const [filterCat, setFilterCat] = useState("Todas");
+  const formRef = useRef(null);
+
+  const scrollToForm = () => {
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  };
+
+  const openNew = () => { setForm({ ...empty }); scrollToForm(); };
+  const openEdit = (s) => { setForm({ ...s }); scrollToForm(); };
 
   const load = async () => {
     const data = await base44.entities.ServiceType.list("name");
@@ -64,7 +74,7 @@ export default function Services() {
             <p className="text-sm text-slate-500 mt-1">Administra los servicios que ofreces</p>
           </div>
           <button
-            onClick={() => setForm({ ...empty })}
+            onClick={openNew}
             className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors"
           >
             <Plus className="w-4 h-4" /> Nuevo Servicio
@@ -107,7 +117,7 @@ export default function Services() {
 
         {/* Form */}
         {form && (
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6 shadow-sm">
+          <div ref={formRef} className="bg-white rounded-2xl border border-gray-100 p-6 mb-6 shadow-sm scroll-mt-4">
             <h2 className="text-sm font-semibold text-slate-900 mb-4">{form.id ? "Editar Servicio" : "Nuevo Servicio"}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -221,7 +231,7 @@ export default function Services() {
                   <p className="text-xs text-slate-400">{s.unit}</p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => setForm({ ...s })} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                  <button onClick={() => openEdit(s)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                     <Pencil className="w-4 h-4 text-slate-400" />
                   </button>
                   <button onClick={() => handleDelete(s.id)} className="p-2 hover:bg-red-50 rounded-lg transition-colors">
