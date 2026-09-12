@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Plus, Pencil, Trash2, Check, X, Tag, PencilLine } from "lucide-react";
 
-const CATEGORIES = ["Redes", "Software", "Hardware", "Soporte", "Seguridad", "Infraestructura", "Consultoría", "Producto", "Otro"];
+const CATEGORIES = ["Redes", "Software", "Hardware", "Soporte", "Seguridad", "Infraestructura", "Consultoría", "Producto", "Impresoras", "Capacitaciones", "Otro"];
 const CATEGORY_COLORS = {
   Redes: "bg-blue-100 text-blue-700",
   Software: "bg-violet-100 text-violet-700",
@@ -12,6 +12,8 @@ const CATEGORY_COLORS = {
   Infraestructura: "bg-slate-100 text-slate-700",
   "Consultoría": "bg-pink-100 text-pink-700",
   Producto: "bg-orange-100 text-orange-700",
+  Impresoras: "bg-cyan-100 text-cyan-700",
+  Capacitaciones: "bg-teal-100 text-teal-700",
   Otro: "bg-gray-100 text-gray-700",
 };
 

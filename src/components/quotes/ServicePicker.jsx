@@ -10,6 +10,8 @@ const CATEGORY_COLORS = {
   Infraestructura: "bg-slate-100 text-slate-700 border-slate-200",
   "Consultoría": "bg-pink-100 text-pink-700 border-pink-200",
   Producto: "bg-orange-100 text-orange-700 border-orange-200",
+  Impresoras: "bg-cyan-100 text-cyan-700 border-cyan-200",
+  Capacitaciones: "bg-teal-100 text-teal-700 border-teal-200",
   Otro: "bg-gray-100 text-gray-700 border-gray-200",
 };
 
