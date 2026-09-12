@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Plus, Trash2, UserSearch } from "lucide-react";
 import { addDays, format } from "date-fns";
+import ServicePicker from "./ServicePicker";
 
 const IVA_RATE = 0.19;
 const emptyItem = { service_type_id: "", service_name: "", description: "", quantity: 1, unit_price: 0, unit_price_uf: 0, total: 0, total_uf: 0, is_operational_expense: false };
@@ -441,11 +442,11 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
               <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
                 <div className="md:col-span-4">
                   <label className="text-xs text-slate-400 mb-1 block">Servicio</label>
-                  <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none"
-                    value={item.service_type_id || ""} onChange={e => updateItem(idx, "service_type_id", e.target.value)}>
-                    <option value="">-- Seleccionar --</option>
-                    {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
+                  <ServicePicker
+                    services={services}
+                    value={item.service_type_id || ""}
+                    onChange={val => updateItem(idx, "service_type_id", val)}
+                  />
                 </div>
                 <div className="md:col-span-3">
                   <label className="text-xs text-slate-400 mb-1 block">Descripción</label>

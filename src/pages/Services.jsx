@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Pencil, Trash2, Check, X, Tag } from "lucide-react";
+import { Plus, Pencil, Trash2, Check, X, Tag, PencilLine } from "lucide-react";
 
 const CATEGORIES = ["Redes", "Software", "Hardware", "Soporte", "Seguridad", "Infraestructura", "Consultoría", "Producto", "Otro"];
 const CATEGORY_COLORS = {
@@ -65,6 +65,40 @@ export default function Services() {
             <Plus className="w-4 h-4" /> Nuevo Servicio
           </button>
         </div>
+
+        {/* Editing banner */}
+        {form && (
+          <div className="sticky top-0 z-20 -mx-6 md:-mx-8 mb-6 bg-slate-900 text-white px-6 md:px-8 py-3 flex items-center justify-between shadow-lg">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                {form.id ? <PencilLine className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-slate-400 leading-none mb-0.5">
+                  {form.id ? "Editando servicio" : "Creando nuevo servicio"}
+                </p>
+                <p className="text-sm font-semibold truncate">
+                  {form.name || "Sin nombre aún"}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setForm(null)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-300 hover:text-white border border-white/10 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <X className="w-3.5 h-3.5" /> Cancelar
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving || !form.name}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white text-slate-900 rounded-lg hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors font-medium"
+              >
+                <Check className="w-3.5 h-3.5" /> {saving ? "Guardando..." : "Guardar"}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Form */}
         {form && (
