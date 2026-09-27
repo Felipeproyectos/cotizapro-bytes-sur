@@ -94,7 +94,7 @@ export default function ServicePicker({ services, value, onChange, placeholder =
           </div>
 
           {/* Category pills */}
-          {categories.length > 2 && (
+          {categories.length > 1 && (
             <div className="flex gap-1.5 p-2 border-b border-gray-100 overflow-x-auto">
               {categories.map(cat => (
                 <button
