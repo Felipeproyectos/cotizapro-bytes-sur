@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Plus, Pencil, Trash2, Check, X, Tag, PencilLine } from "lucide-react";
 
-const CATEGORIES = ["Redes", "Software", "Hardware", "Soporte", "Seguridad", "Infraestructura", "Consultoría", "Producto", "Impresoras", "Capacitaciones", "Otro"];
+const DEFAULT_CATEGORIES = ["Redes", "Software", "Hardware", "Soporte", "Seguridad", "Infraestructura", "Consultoría", "Producto", "Impresoras", "Capacitaciones", "Otro"];
 const CATEGORY_COLORS = {
   Redes: "bg-blue-100 text-blue-700",
   Software: "bg-violet-100 text-violet-700",
@@ -63,7 +63,8 @@ export default function Services() {
     load();
   };
 
-  const categories = ["Todas", ...CATEGORIES.filter(c => services.some(s => s.category === c))];
+  const allCategories = Array.from(new Set([...DEFAULT_CATEGORIES, ...services.map(s => s.category).filter(Boolean)]));
+  const categories = ["Todas", ...allCategories];
   const filteredServices = filterCat === "Todas" ? services : services.filter(s => s.category === filterCat);
   const countByCat = (cat) => cat === "Todas" ? services.length : services.filter(s => s.category === cat).length;
 
@@ -133,13 +134,17 @@ export default function Services() {
               </div>
               <div>
                 <label className="text-xs font-medium text-slate-500 mb-1.5 block">Categoría</label>
-                <select
+                <input
+                  list="category-list"
                   className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                   value={form.category}
                   onChange={e => setForm({ ...form, category: e.target.value })}
-                >
-                  {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-                </select>
+                  placeholder="Selecciona o escribe una nueva..."
+                />
+                <datalist id="category-list">
+                  {allCategories.map(c => <option key={c} value={c} />)}
+                </datalist>
+                <p className="text-[11px] text-slate-400 mt-1">Puedes escribir una categoría nueva y se agregará automáticamente.</p>
               </div>
               <div>
                 <label className="text-xs font-medium text-slate-500 mb-1.5 block">Precio Base (CLP)</label>
