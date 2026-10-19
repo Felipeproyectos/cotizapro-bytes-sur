@@ -246,7 +246,8 @@ export function buildQuoteHtml(quote, company) {
 
 export async function downloadQuotePdf(quote, company) {
   const html = buildQuoteHtml(quote, company);
-  const fileName = `Cotizacion_${(company?.company_name || 'Empresa').replace(/\s+/g, '_')}_${quote.quote_number}.pdf`;
+  const slug = (quote.title || quote.client_name || quote.quote_number || 'Cotizacion').replace(/[^\w\sáéíóúñÁÉÍÓÚÑ-]/g, '').trim().replace(/\s+/g, '_');
+  const fileName = `${slug}.pdf`;
 
   const iframe = document.createElement("iframe");
   iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;border:0;visibility:hidden;";
