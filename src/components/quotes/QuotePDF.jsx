@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { X, Printer, Share } from "lucide-react";
+import { X, Printer, Share, Download, Loader2 } from "lucide-react";
+import { buildQuoteHtml, printQuotePdf, downloadQuotePdf } from "@/lib/quotePdf";
 
 const STATUS_COLORS = {
   Borrador: "#94a3b8", Enviada: "#3b82f6", Aceptada: "#10b981",
@@ -11,7 +12,7 @@ const STATUS_COLORS = {
 
 export default function QuotePDF({ quote, onClose }) {
   const [company, setCompany] = useState(null);
-  const printFrameRef = useRef(null);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     base44.entities.CompanySettings.list().then(data => {
@@ -22,7 +23,6 @@ export default function QuotePDF({ quote, onClose }) {
   const formatCLP = (n) => `$${Math.round(n || 0).toLocaleString("es-CL")}`;
   const isUF = quote.currency === "UF";
   const ufVal = quote.uf_value || 1;
-  const formatMoney = (clp, uf) => isUF && uf != null ? `${(uf || 0).toFixed(2)} UF` : formatCLP(clp);
   const statusColor = STATUS_COLORS[quote.status] || "#94a3b8";
 
   const totalAbonos = (quote.abonos || []).reduce((s, a) => s + (a.monto || 0), 0);
@@ -39,228 +39,19 @@ export default function QuotePDF({ quote, onClose }) {
   const regularItems = (quote.items || []).filter(i => !i.is_operational_expense);
   const total_client = quote.total_client || (quote.total || 0) + operational_expenses_total;
 
-  const handlePrint = () => {
-    const html = buildHtml();
-    const fileName = `Cotizacion_${(company?.company_name || 'Empresa').replace(/\s+/g, '_')}_${quote.quote_number}`;
+  const handlePrint = () => printQuotePdf(quote, company);
 
-    // Crear iframe oculto para imprimir sin abrir nueva pestaña
-    const existing = document.getElementById("print-frame-quote");
-    if (existing) existing.remove();
-
-    const frame = document.createElement("iframe");
-    frame.id = "print-frame-quote";
-    frame.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:794px;height:1123px;border:0;visibility:hidden;";
-    document.body.appendChild(frame);
-
-    frame.srcdoc = html;
-    frame.onload = () => {
-      frame.contentWindow.document.title = fileName;
-      frame.contentWindow.focus();
-      frame.contentWindow.print();
-      setTimeout(() => frame.remove(), 2000);
-    };
-  };
-
-  const buildHtml = () => {
-    const IVA_RATE = 0.19;
-    const isUFLocal = quote.currency === "UF";
-    const ufValLocal = quote.uf_value || 1;
-    const paymentTypeLocal = quote.payment_type || (quote.include_iva ? "Con IVA (19%)" : "Sin IVA");
-    const isHonorariosLocal = paymentTypeLocal === "Boleta de Honorarios";
-    const retencionLocal = isHonorariosLocal ? Math.round((quote.subtotal || 0) * 0.1075) : 0;
-    const liquidoLocal = isHonorariosLocal ? (quote.subtotal || 0) - retencionLocal : 0;
-    const discount_amountLocal = quote.discount_amount || 0;
-    const discount_percentLocal = quote.discount_percent || 0;
-    const isMensualLocal = quote.billing_type === "Mensual";
-    const opItemsLocal = (quote.items || []).filter(i => i.is_operational_expense);
-    const opTotalLocal = quote.total_operational_expenses || opItemsLocal.reduce((s, i) => s + (parseFloat(i.total) || 0), 0);
-    const totalAbLocal = (quote.abonos || []).reduce((s, a) => s + (a.monto || 0), 0);
-    const saldoLocal = (quote.total_client || quote.total || 0) - totalAbLocal;
-    const totalClientLocal = quote.total_client || (quote.total || 0) + opTotalLocal;
-    const fmtCLP = (n) => `$${Math.round(n || 0).toLocaleString("es-CL")}`;
-    const opts = quote.payment_options?.length > 0 ? quote.payment_options : (quote.payment_option ? [quote.payment_option] : []);
-
-    return `<!DOCTYPE html>
-<html><head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Cotizacion ${company?.company_name || 'Empresa'} - ${quote.quote_number}</title>
-<style>
-  @page { size: Letter; margin: 12mm 15mm; }
-  * { font-family: Arial, Helvetica, sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: white; color: #0f172a; font-size: 13px; }
-  .header { background: #0f172a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; color: white; padding: 28px 36px; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: nowrap; gap: 16px; page-break-inside: avoid; break-inside: avoid; }
-  .header-left { flex: 1 1 auto; min-width: 0; max-width: 55%; overflow: hidden; display: flex; flex-direction: column; gap: 10px; }
-  .header-left .logo-wrap { display: block; }
-  .header-left .company-info h1 { font-size: 15px; font-weight: 700; margin-bottom: 5px; color: white; word-break: break-word; overflow-wrap: break-word; white-space: normal; line-height: 1.3; }
-  .header-left .company-info p { font-size: 10.5px; color: #94a3b8; margin-top: 2px; word-break: break-word; overflow-wrap: break-word; }
-  .header-right { text-align: right; flex: 0 0 auto; min-width: 160px; max-width: 42%; word-break: break-word; overflow-wrap: break-word; }
-  .header-right .label { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
-  .header-right .number { font-size: 18px; font-weight: 700; color: white; }
-  .header-right .date { font-size: 11px; color: #94a3b8; margin-top: 3px; }
-  .section { padding: 18px 36px; border-bottom: 1px solid #f1f5f9; }
-  .section-title { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; }
-  .field-label { font-size: 10px; color: #94a3b8; margin-bottom: 1px; }
-  .field-value { font-size: 12px; color: #1e293b; font-weight: 500; }
-  table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-  thead tr { background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  th { font-size: 10px; font-weight: 600; color: #64748b; padding: 8px 10px; text-align: left; }
-  th.right { text-align: right; } th.center { text-align: center; }
-  td { font-size: 12px; padding: 9px 10px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: top; }
-  td.center { text-align: center; } td.right { text-align: right; } td.bold { font-weight: 600; color: #0f172a; }
-  .sub { font-size: 10px; color: #94a3b8; margin-top: 2px; }
-  .totals { margin-top: 14px; display: flex; justify-content: flex-end; }
-  .totals-box { width: 230px; }
-  .total-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; }
-  .total-row span:first-child { color: #64748b; }
-  .total-row span:last-child { font-weight: 500; color: #0f172a; }
-  .total-row.final { border-top: 1px solid #e2e8f0; padding-top: 7px; margin-top: 5px; }
-  .total-row.final span { font-weight: 700; font-size: 14px; }
-  .total-note { font-size: 10px; color: #94a3b8; margin-top: 4px; text-align: right; }
-  .red { color: #dc2626; } .green { color: #059669; }
-  .payment-section { padding: 16px 36px; background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; border-bottom: 1px solid #f1f5f9; }
-  .notes { padding: 16px 36px; border-bottom: 1px solid #f1f5f9; }
-  .notes p { font-size: 12px; color: #475569; line-height: 1.6; white-space: pre-line; }
-  .footer { padding: 12px 36px; text-align: center; }
-  .footer p { font-size: 10px; color: #94a3b8; }
-  @media (max-width: 600px) { .header { padding: 20px 16px; } .section, .payment-section, .notes, .footer { padding-left: 16px; padding-right: 16px; } .grid2 { grid-template-columns: 1fr; } .totals-box { width: 100%; } }
-</style>
-</head><body>
-<div class="header">
-  <div class="header-left">
-    ${company?.logo_url ? `<div class="logo-wrap"><img src="${company.logo_url}" alt="Logo" style="max-height:90px;max-width:200px;object-fit:contain;display:block;" /></div>` : ""}
-    <div class="company-info">
-      <h1>${company?.company_name || "Mi Empresa"}</h1>
-      ${company?.rut ? `<p>RUT: ${company.rut}</p>` : ""}
-      ${company?.address ? `<p>${company.address}</p>` : ""}
-      ${company?.phone ? `<p>${company.phone}</p>` : ""}
-      ${company?.email ? `<p>${company.email}</p>` : ""}
-    </div>
-  </div>
-  <div class="header-right">
-    <div class="label">${isHonorariosLocal ? "Boleta de Honorarios" : "Cotización"}</div>
-    <div class="number">${quote.quote_number}</div>
-    ${quote.title ? `<div style="color:#cbd5e1;font-size:12px;margin-top:3px;word-break:break-word;overflow-wrap:break-word;">${quote.title}</div>` : ""}
-    <div class="date">${format(new Date(quote.created_date), "dd 'de' MMMM, yyyy", { locale: es })}</div>
-    ${quote.valid_until ? `<div class="date">Válida hasta: ${format(new Date(quote.valid_until), "dd MMM yyyy", { locale: es })}</div>` : ""}
-    ${isMensualLocal ? `<div style="display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px;margin-top:8px;background:#7c3aed33;color:#a78bfa;">🔄 SERVICIO MENSUAL · Cobro día ${quote.billing_day || "—"} de cada mes</div>` : ""}
-  </div>
-</div>
-
-<div class="section">
-  <div class="section-title">Datos del Cliente</div>
-  <div class="grid2">
-    <div><div class="field-label">Nombre</div><div class="field-value">${quote.client_name}</div></div>
-    ${quote.client_company ? `<div><div class="field-label">Empresa</div><div class="field-value">${quote.client_company}</div></div>` : ""}
-    ${quote.client_rut ? `<div><div class="field-label">RUT</div><div class="field-value">${quote.client_rut}</div></div>` : ""}
-    ${quote.client_email ? `<div><div class="field-label">Email</div><div class="field-value">${quote.client_email}</div></div>` : ""}
-    ${quote.client_phone ? `<div><div class="field-label">Teléfono</div><div class="field-value">${quote.client_phone}</div></div>` : ""}
-    ${quote.client_address ? `<div><div class="field-label">Dirección</div><div class="field-value">${quote.client_address}</div></div>` : ""}
-  </div>
-</div>
-
-<div class="section">
-  <div class="section-title">Detalle de Servicios</div>
-  <table>
-    <thead><tr><th>Descripción</th><th class="center">Cant.</th><th class="right">P. Unit.</th><th class="right">Total</th></tr></thead>
-    <tbody>
-      ${(quote.items || []).filter(i => !i.is_operational_expense).map(item => `
-      <tr>
-        <td class="bold">${item.service_name || item.description}${item.service_name && item.description ? `<div class="sub">${item.description}</div>` : ""}</td>
-        <td class="center">${item.quantity}</td>
-        <td class="right">${isUFLocal ? `${(item.unit_price_uf || 0).toFixed(2)} UF` : fmtCLP(item.unit_price)}</td>
-        <td class="right bold">${isUFLocal ? `${(item.total_uf || 0).toFixed(2)} UF` : fmtCLP(item.total)}</td>
-      </tr>`).join("")}
-    </tbody>
-  </table>
-  ${opItemsLocal.length > 0 ? `
-  <div style="margin-top:12px;">
-    <div class="section-title" style="background:#eef2ff;color:#1e40af;padding:6px 10px;border-radius:4px;">Materiales / Repuestos</div>
-    <table>
-      <thead><tr style="background:#f0f4ff;"><th>Descripción</th><th class="center">Cant.</th><th class="right">P. Unit.</th><th class="right">Total</th></tr></thead>
-      <tbody>
-        ${opItemsLocal.map(item => `
-        <tr>
-          <td class="bold">${item.service_name || item.description}${item.service_name && item.description ? `<div class="sub">${item.description}</div>` : ""}</td>
-          <td class="center">${item.quantity}</td>
-          <td class="right">${isUFLocal ? `${(item.unit_price_uf || 0).toFixed(2)} UF` : fmtCLP(item.unit_price)}</td>
-          <td class="right bold">${isUFLocal ? `${(item.total_uf || 0).toFixed(2)} UF` : fmtCLP(item.total)}</td>
-        </tr>`).join("")}
-      </tbody>
-    </table>
-  </div>` : ""}
-  <div class="totals">
-    <div class="totals-box">
-      <div class="total-row"><span>Subtotal</span><span>${isUFLocal ? `${(quote.subtotal_uf || 0).toFixed(2)} UF` : fmtCLP(quote.subtotal)}</span></div>
-      ${discount_amountLocal > 0 ? `<div class="total-row"><span style="color:#059669">Descuento (${discount_percentLocal.toFixed(1)}%)</span><span style="color:#059669">-${fmtCLP(discount_amountLocal)}</span></div>` : ""}
-      ${paymentTypeLocal === "Con IVA (19%)" ? `<div class="total-row"><span>IVA (19%)</span><span>${fmtCLP(quote.iva_amount)}</span></div>` : ""}
-      ${isHonorariosLocal ? `<div class="total-row"><span>Retención (10,75%)</span><span class="red">-${fmtCLP(retencionLocal)}</span></div><div class="total-row"><span>Líquido a pagar</span><span>${fmtCLP(liquidoLocal)}</span></div>` : ""}
-      <div class="total-row final"><span>Total${isMensualLocal ? " mensual" : ""}</span><span>${isUFLocal ? `${((quote.total / ufValLocal) || 0).toFixed(2)} UF` : fmtCLP(quote.total)}</span></div>
-      ${paymentTypeLocal === "Sin IVA" ? `<div class="total-note">* Precio no incluye IVA</div>` : ""}
-      ${opTotalLocal > 0 ? `
-        <div class="total-row" style="border-top:1px dashed #e0e7ff;margin-top:4px;padding-top:4px;">
-          <span style="color:#1e40af;font-weight:600;">Materiales / Repuestos</span>
-          <span style="font-weight:600;color:#1e40af;">${isUFLocal ? `${(opTotalLocal / ufValLocal).toFixed(2)} UF` : fmtCLP(opTotalLocal)}</span>
-        </div>
-        <div class="total-row final" style="background:#eef2ff;padding:8px;border-radius:4px;margin-top:4px;">
-          <span style="color:#1e3a8a;font-weight:700;">Total a Pagar</span>
-          <span style="font-weight:700;color:#1e3a8a;">${isUFLocal ? `${(totalClientLocal / ufValLocal).toFixed(2)} UF` : fmtCLP(totalClientLocal)}</span>
-        </div>` : ""}
-    </div>
-  </div>
-</div>
-
-${(quote.abonos || []).length > 0 ? `
-<div class="section">
-  <div class="section-title">Abonos Recibidos</div>
-  <table>
-    <thead><tr><th>Fecha</th><th>Nota</th><th class="right">Monto</th></tr></thead>
-    <tbody>
-      ${(quote.abonos || []).map(a => `
-      <tr>
-        <td>${a.fecha ? format(new Date(a.fecha), "dd/MM/yyyy") : "—"}</td>
-        <td>${a.nota || "—"}</td>
-        <td class="right green">${fmtCLP(a.monto)}</td>
-      </tr>`).join("")}
-    </tbody>
-  </table>
-  <div style="display:flex;justify-content:flex-end;gap:40px;margin-top:10px;font-size:12px;">
-    <div style="text-align:right"><div style="color:#64748b">Total abonado</div><div style="font-weight:600;color:#059669">${fmtCLP(totalAbLocal)}</div></div>
-    <div style="text-align:right"><div style="color:#64748b">Saldo pendiente</div><div style="font-weight:700;font-size:14px;color:${saldoLocal <= 0 ? "#059669" : "#ef4444"}">${fmtCLP(saldoLocal)}</div></div>
-  </div>
-</div>` : ""}
-
-${opts.length > 0 ? `
-<div class="payment-section">
-  <div class="section-title">Datos de Pago</div>
-  ${opts.map((po, i) => `
-    ${po.label ? `<div style="font-size:11px;font-weight:600;color:#475569;margin-bottom:6px;${i > 0 ? "margin-top:12px;padding-top:10px;border-top:1px solid #e2e8f0;" : ""}">${po.label}</div>` : ""}
-    <div class="grid2">
-      ${po.titular ? `<div><div class="field-label">Titular</div><div class="field-value">${po.titular}</div></div>` : ""}
-      ${po.rut ? `<div><div class="field-label">RUT</div><div class="field-value">${po.rut}</div></div>` : ""}
-      ${po.banco ? `<div><div class="field-label">Banco</div><div class="field-value">${po.banco}</div></div>` : ""}
-      ${po.tipo_cuenta ? `<div><div class="field-label">Tipo de cuenta</div><div class="field-value">${po.tipo_cuenta}</div></div>` : ""}
-      ${po.numero_cuenta ? `<div><div class="field-label">N° de Cuenta</div><div class="field-value">${po.numero_cuenta}</div></div>` : ""}
-      ${po.email_confirmacion ? `<div><div class="field-label">Email de confirmación</div><div class="field-value">${po.email_confirmacion}</div></div>` : ""}
-    </div>
-  `).join("")}
-</div>` : ""}
-
-${quote.notes ? `<div class="notes"><div class="section-title">Notas y Condiciones</div><p>${quote.notes}</p></div>` : ""}
-
-<div class="footer">
-  <p>${company?.company_name || "Mi Empresa"}${company?.email ? ` · ${company.email}` : ""}${company?.phone ? ` · ${company.phone}` : ""}</p>
-  <p style="margin-top:2px;color:#cbd5e1;">Documento generado digitalmente</p>
-</div>
-</body></html>`;
+  const handleDownload = async () => {
+    setDownloading(true);
+    try { await downloadQuotePdf(quote, company); }
+    catch (e) { console.error(e); }
+    setDownloading(false);
   };
 
   const handleShare = async () => {
-    const html = buildHtml();
+    const html = buildQuoteHtml(quote, company);
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
-    // Abrir el documento completo en una nueva pestaña para compartir / ver
     window.open(url, "_blank");
   };
 
@@ -274,12 +65,21 @@ ${quote.notes ? `<div class="notes"><div class="section-title">Notas y Condicion
             {isMensual && <span className="ml-2 bg-violet-500/30 text-violet-200 text-xs px-2 py-0.5 rounded-full">🔄 Mensual · Día {quote.billing_day}</span>}
           </p>
           <div className="flex gap-2">
-            <button onClick={handlePrint}
-              className="select-none hidden sm:flex items-center gap-2 bg-white text-slate-900 px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-100">
-              <Printer className="w-4 h-4" /> Imprimir / PDF
+            <button onClick={handleDownload} disabled={downloading}
+              className="select-none hidden sm:flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-emerald-700 disabled:opacity-60 transition-colors">
+              {downloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {downloading ? "Generando..." : "Descargar PDF"}
+            </button>
+            <button onClick={handleDownload} disabled={downloading}
+              className="select-none sm:hidden p-2 bg-emerald-600 hover:bg-emerald-700 rounded-xl text-white disabled:opacity-60" title="Descargar PDF">
+              {downloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
             </button>
             <button onClick={handlePrint}
-              className="select-none sm:hidden p-2 bg-white/10 hover:bg-white/20 rounded-xl text-white" title="Imprimir / PDF">
+              className="select-none hidden sm:flex items-center gap-2 bg-white text-slate-900 px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-100">
+              <Printer className="w-4 h-4" /> Imprimir
+            </button>
+            <button onClick={handlePrint}
+              className="select-none sm:hidden p-2 bg-white/10 hover:bg-white/20 rounded-xl text-white" title="Imprimir">
               <Printer className="w-5 h-5" />
             </button>
             <button onClick={handleShare}

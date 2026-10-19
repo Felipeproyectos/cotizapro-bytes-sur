@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Plus, FileText, Search, Pencil, Trash2, Download, Copy, CreditCard, X, RefreshCw } from "lucide-react";
+import { Plus, FileText, Search, Pencil, Trash2, Download, Copy, CreditCard, X, RefreshCw, Eye, Loader2 } from "lucide-react";
 import { addDays, format as formatDate } from "date-fns";
 import QuoteForm from "../components/quotes/QuoteForm";
 import QuotePDF from "../components/quotes/QuotePDF";
 import RecurringChargesPanel from "../components/quotes/RecurringChargesPanel";
+import { downloadQuotePdf } from "@/lib/quotePdf";
 
 const STATUS_COLORS = {
   Borrador: { bg: "#94a3b820", text: "#94a3b8" },
@@ -27,6 +28,8 @@ export default function Quotes() {
   const [abonoModal, setAbonoModal] = useState(null); // quote
   const [abonoForm, setAbonoForm] = useState({ monto: "", fecha: "", nota: "" });
   const [savingAbono, setSavingAbono] = useState(false);
+  const [company, setCompany] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
 
   const load = async () => {
     const data = await base44.entities.Quote.list("-created_date");
@@ -36,11 +39,21 @@ export default function Quotes() {
 
   useEffect(() => {
     load();
+    base44.entities.CompanySettings.list().then(data => {
+      if (data && data.length > 0) setCompany(data[0]);
+    });
     // Check URL for ?new=1 or ?tab=mensualidades
     const params = new URLSearchParams(window.location.search);
     if (params.get("new") === "1") setView("form");
     if (params.get("tab") === "mensualidades") setActiveTab("mensualidades");
   }, []);
+
+  const handleDirectDownload = async (q) => {
+    setDownloadingId(q.id);
+    try { await downloadQuotePdf(q, company); }
+    catch (e) { console.error(e); }
+    setDownloadingId(null);
+  };
 
   const handleDelete = async (id) => {
     if (!confirm("¿Eliminar esta cotización?")) return;
@@ -238,8 +251,11 @@ export default function Quotes() {
                     })()}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
+                    <button onClick={() => handleDirectDownload(q)} disabled={downloadingId === q.id} className="p-2 hover:bg-emerald-50 rounded-lg disabled:opacity-50" title="Descargar PDF">
+                      {downloadingId === q.id ? <Loader2 className="w-4 h-4 text-emerald-600 animate-spin" /> : <Download className="w-4 h-4 text-emerald-500" />}
+                    </button>
                     <button onClick={() => { setSelected(q); setView("pdf"); }} className="p-2 hover:bg-gray-100 rounded-lg" title="Ver PDF">
-                      <Download className="w-4 h-4 text-slate-400" />
+                      <Eye className="w-4 h-4 text-slate-400" />
                     </button>
                     <button onClick={() => { setSelected(q); setView("form"); }} className="p-2 hover:bg-gray-100 rounded-lg" title="Editar">
                       <Pencil className="w-4 h-4 text-slate-400" />
