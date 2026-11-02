@@ -4,7 +4,7 @@
   "properties": {
     "quote_id": {
       "type": "string",
-      "description": "ID de la cotizaci\u00f3n asociada"
+      "description": "ID de la cotizaci\u00f3n asociada (opcional)"
     },
     "client_name": {
       "type": "string",
@@ -15,7 +15,7 @@
     },
     "title": {
       "type": "string",
-      "description": "T\u00edtulo del servicio recurrente"
+      "description": "Nombre del servicio"
     },
     "amount": {
       "type": "number",
@@ -25,38 +25,31 @@
       "type": "number",
       "description": "D\u00eda del mes para cobrar (1-28)"
     },
-    "next_billing_date": {
+    "start_date": {
       "type": "string",
       "format": "date",
-      "description": "Fecha del pr\u00f3ximo cobro"
+      "description": "Inicio de la vigencia del servicio"
     },
-    "status": {
-      "type": "string",
-      "enum": [
-        "pendiente",
-        "pagado"
-      ],
-      "default": "pendiente"
-    },
-    "paid_date": {
+    "end_date": {
       "type": "string",
       "format": "date",
-      "description": "Fecha en que se marc\u00f3 como pagado"
-    },
-    "payment_proof_url": {
-      "type": "string",
-      "description": "URL del comprobante de transferencia"
+      "description": "Fin de la vigencia del servicio"
     },
     "active": {
       "type": "boolean",
       "default": true,
-      "description": "Si el cobro recurrente sigue activo"
+      "description": "Si el servicio est\u00e1 activo"
     }
   },
   "required": [
-    "quote_id",
     "client_name",
     "amount",
     "billing_day"
-  ]
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {},
+    "delete": {}
+  }
 }

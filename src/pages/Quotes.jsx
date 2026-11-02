@@ -161,7 +161,7 @@ export default function Quotes() {
             onClick={() => setActiveTab("mensualidades")}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border transition-colors ${activeTab === "mensualidades" ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-500 border-gray-200 hover:border-slate-400"}`}
           >
-            <RefreshCw className="w-4 h-4" /> Mensualidades
+            <RefreshCw className="w-4 h-4" /> Servicios mensuales
           </button>
         </div>
 

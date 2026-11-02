@@ -1,0 +1,55 @@
+{
+  "name": "ChargePayment",
+  "type": "object",
+  "properties": {
+    "charge_id": {
+      "type": "string",
+      "description": "ID del servicio mensual pagado"
+    },
+    "client_name": {
+      "type": "string"
+    },
+    "client_company": {
+      "type": "string"
+    },
+    "service_title": {
+      "type": "string"
+    },
+    "period": {
+      "type": "string",
+      "description": "Mes pagado en formato YYYY-MM"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha de vencimiento del mes pagado"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Monto pagado"
+    },
+    "paid_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha en que se registr\u00f3 el pago"
+    },
+    "payment_proof_url": {
+      "type": "string",
+      "description": "Comprobante de pago"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "charge_id",
+    "period",
+    "amount"
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {},
+    "delete": {}
+  }
+}
