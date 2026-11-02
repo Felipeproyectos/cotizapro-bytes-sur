@@ -264,6 +264,20 @@ export async function downloadQuotePdf(quote, company) {
   const iframeDoc = iframe.contentDocument;
   const pdfDoc = iframeDoc.querySelector(".pdf-doc");
 
+  // Recolectar cortes seguros (bordes de bloques, filas y totales) para no partir contenido
+  const docRect = pdfDoc.getBoundingClientRect();
+  const breaks = [];
+  const addBreak = (el) => {
+    const r = el.getBoundingClientRect();
+    const bottom = Math.round(r.bottom - docRect.top);
+    if (bottom > 4) breaks.push(bottom);
+  };
+  pdfDoc.querySelectorAll(":scope > *").forEach(addBreak);
+  pdfDoc.querySelectorAll("tr, .totals-wrap, .op-block, .grid2").forEach(addBreak);
+  breaks.sort((a, b) => a - b);
+
+  const docHeight = Math.max(Math.round(pdfDoc.scrollHeight), Math.round(docRect.height));
+
   const canvas = await html2canvas(pdfDoc, {
     scale: 2,
     useCORS: true,
@@ -274,24 +288,42 @@ export async function downloadQuotePdf(quote, company) {
 
   iframe.remove();
 
-  const imgData = canvas.toDataURL("image/jpeg", 0.95);
+  const scale = canvas.width / 794;
+  const pageHeightPx = Math.round(794 * (297 / 210)); // proporción A4
+
   const pdf = new jsPDF("p", "mm", "a4");
   const pdfWidth = pdf.internal.pageSize.getWidth();
   const pdfHeight = pdf.internal.pageSize.getHeight();
-  const imgWidth = pdfWidth;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-  let heightLeft = imgHeight;
-  let position = 0;
+  let start = 0;
+  let firstPage = true;
 
-  pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
-  heightLeft -= pdfHeight;
+  while (start < docHeight - 1) {
+    const limit = start + pageHeightPx;
+    let end;
+    if (limit >= docHeight) {
+      end = docHeight;
+    } else {
+      const fits = breaks.filter((b) => b > start + 40 && b <= limit);
+      end = fits.length ? fits[fits.length - 1] : limit;
+    }
 
-  while (heightLeft > 0) {
-    position -= pdfHeight;
-    pdf.addPage();
-    pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
-    heightLeft -= pdfHeight;
+    const sliceH = Math.min(end - start, docHeight - start);
+    const srcH = Math.min(Math.round(sliceH * scale), canvas.height - Math.round(start * scale));
+
+    const slice = document.createElement("canvas");
+    slice.width = canvas.width;
+    slice.height = srcH;
+    const ctx = slice.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, slice.width, slice.height);
+    ctx.drawImage(canvas, 0, Math.round(start * scale), canvas.width, srcH, 0, 0, canvas.width, srcH);
+
+    if (!firstPage) pdf.addPage();
+    const renderH = (sliceH / pageHeightPx) * pdfHeight;
+    pdf.addImage(slice.toDataURL("image/jpeg", 0.95), "JPEG", 0, 0, pdfWidth, Math.min(renderH, pdfHeight));
+    firstPage = false;
+    start = end;
   }
 
   pdf.save(fileName);
