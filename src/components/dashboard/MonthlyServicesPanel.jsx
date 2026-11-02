@@ -1,389 +1,385 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { format, parseISO, isPast, isToday, addDays, differenceInDays } from "date-fns";
+import { format, addMonths, startOfMonth, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { RefreshCw, CheckCircle, AlertTriangle, Clock, X, Users, Upload, FileText, Eye, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  RefreshCw, CheckCircle, AlertTriangle, Clock, ChevronLeft, ChevronRight,
+  Upload, Eye, Search, Users, Loader2, CalendarClock, History,
+} from "lucide-react";
+import { chargeMonthKey, getChargeStatus, daysOverdue, markChargePaid, formatCLP } from "@/lib/recurring";
+import ClientChargesModal from "./ClientChargesModal";
 
-function ClientDetailModal({ client, charges, onClose, onPaid, onDeactivate }) {
-  const [uploadingId, setUploadingId] = useState(null);
-  const [paying, setPaying] = useState(null);
+const STATUS_ORDER = { vencido: 0, proximo: 1, programado: 2, pagado: 3 };
 
-  const formatCLP = (n) => `$${Math.round(n || 0).toLocaleString("es-CL")}`;
-
-  const handlePaid = async (charge, proofFile) => {
-    setPaying(charge.id);
-    const today = new Date().toISOString().split("T")[0];
-    const current = parseISO(charge.next_billing_date);
-    const next = new Date(current);
-    next.setMonth(next.getMonth() + 1);
-
-    let proofUrl = charge.payment_proof_url || null;
-    if (proofFile) {
-      setUploadingId(charge.id);
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: proofFile });
-      proofUrl = file_url;
-      setUploadingId(null);
-    }
-
-    await base44.entities.RecurringCharge.update(charge.id, {
-      status: "pagado",
-      paid_date: today,
-      active: false,
-      payment_proof_url: proofUrl,
-    });
-    await base44.entities.RecurringCharge.create({
-      quote_id: charge.quote_id,
-      client_name: charge.client_name,
-      client_company: charge.client_company || "",
-      title: charge.title,
-      amount: charge.amount,
-      billing_day: charge.billing_day,
-      next_billing_date: next.toISOString().split("T")[0],
-      status: "pendiente",
-      active: true,
-    });
-    setPaying(null);
-    onPaid();
-  };
-
-  const handleFileUploadAndPay = (charge) => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = ".pdf,.png,.jpg,.jpeg,.webp";
-    input.onchange = (e) => {
-      const file = e.target.files[0];
-      if (file) handlePaid(charge, file);
-    };
-    input.click();
-  };
-
-  const getStatus = (charge) => {
-    if (charge.status === "pagado") return "pagado";
-    if (!charge.next_billing_date) return "ok";
-    const d = parseISO(charge.next_billing_date);
-    if (isPast(d) || isToday(d)) return "vencido";
-    if (d <= addDays(new Date(), 5)) return "proximo";
-    return "ok";
-  };
-
-  const pending = charges.filter(c => c.status === "pendiente");
-  const paid = charges.filter(c => c.status === "pagado").sort((a, b) =>
-    new Date(b.paid_date || b.created_date) - new Date(a.paid_date || a.created_date)
-  );
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
-          <div>
-            <h2 className="text-base font-bold text-slate-900">{client}</h2>
-            <p className="text-xs text-slate-400">{charges[0]?.client_company || "Historial de mensualidades"}</p>
-          </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg">
-            <X className="w-4 h-4 text-slate-500" />
-          </button>
-        </div>
-
-        <div className="p-6 space-y-5">
-          {/* Pending charges */}
-          {pending.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Cobros Pendientes</p>
-              <div className="space-y-2">
-                {pending.map(c => {
-                  const s = getStatus(c);
-                  return (
-                    <div key={c.id} className={`rounded-xl border p-4 ${
-                      s === "vencido" ? "border-red-200 bg-red-50" :
-                      s === "proximo" ? "border-amber-200 bg-amber-50" :
-                      "border-gray-100 bg-gray-50"
-                    }`}>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            {s === "vencido" && <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />}
-                            {s === "proximo" && <Clock className="w-4 h-4 text-amber-500 shrink-0" />}
-                            {s === "ok" && <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />}
-                            <p className="text-sm font-semibold text-slate-900">{c.title}</p>
-                          </div>
-                          <p className={`text-xs font-semibold mt-1 ${
-                            s === "vencido" ? "text-red-600" :
-                            s === "proximo" ? "text-amber-600" :
-                            "text-slate-500"
-                          }`}>
-                            {s === "vencido"
-                              ? `⚠️ VENCIDO — ${c.next_billing_date ? `venció el ${format(parseISO(c.next_billing_date), "dd MMM yyyy", { locale: es })}` : ""}`
-                              : s === "proximo"
-                              ? `🔔 Próximo — ${c.next_billing_date ? format(parseISO(c.next_billing_date), "dd MMM yyyy", { locale: es }) : ""}`
-                              : `✅ Al día — día ${c.billing_day} de cada mes`}
-                          </p>
-                          <p className="text-base font-bold text-slate-900 mt-1">{formatCLP(c.amount)}/mes</p>
-                        </div>
-                        <div className="flex flex-col gap-1.5 shrink-0">
-                          <button
-                            onClick={() => handlePaid(c, null)}
-                            disabled={paying === c.id}
-                            className="flex items-center gap-1 bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-emerald-600 disabled:opacity-50">
-                            <CheckCircle className="w-3.5 h-3.5" />
-                            {paying === c.id ? "Guardando..." : "Marcar pagado"}
-                          </button>
-                          <button
-                            onClick={() => handleFileUploadAndPay(c)}
-                            disabled={paying === c.id || uploadingId === c.id}
-                            className="flex items-center gap-1 bg-blue-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-blue-600 disabled:opacity-50">
-                            <Upload className="w-3.5 h-3.5" />
-                            {uploadingId === c.id ? "Subiendo..." : "Pagar + comprobante"}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Paid history */}
-          {paid.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Historial de Pagos</p>
-              <div className="space-y-2">
-                {paid.map(c => (
-                  <div key={c.id} className="rounded-xl border border-gray-100 bg-white p-3 flex items-center gap-3">
-                    <div className="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center shrink-0">
-                      <CheckCircle className="w-4 h-4 text-emerald-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900 truncate">{c.title}</p>
-                      <p className="text-xs text-slate-400">
-                        Pagado el {c.paid_date ? format(parseISO(c.paid_date), "dd MMM yyyy", { locale: es }) : "—"}
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-bold text-slate-900">{formatCLP(c.amount)}</p>
-                      {c.payment_proof_url && (
-                        <a href={c.payment_proof_url} target="_blank" rel="noopener noreferrer"
-                          className="text-xs text-blue-500 hover:text-blue-700 flex items-center gap-0.5 justify-end mt-0.5">
-                          <Eye className="w-3 h-3" /> Comprobante
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {charges.length === 0 && (
-            <p className="text-sm text-slate-400 text-center py-8">Sin registros de mensualidades</p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+const FILTERS = [
+  { key: "todos", label: "Todos" },
+  { key: "pagados", label: "Pagados" },
+  { key: "pendientes", label: "Pendientes" },
+];
 
 export default function MonthlyServicesPanel() {
   const [charges, setCharges] = useState([]);
-  const [allCharges, setAllCharges] = useState([]);
+  const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedClient, setSelectedClient] = useState(null);
+  const [monthDate, setMonthDate] = useState(startOfMonth(new Date()));
+  const [filter, setFilter] = useState("todos");
+  const [search, setSearch] = useState("");
+  const [busyId, setBusyId] = useState(null);
+  const [historyClient, setHistoryClient] = useState(null);
+  const [pendingFileCharge, setPendingFileCharge] = useState(null);
+  const fileInputRef = useRef(null);
 
   const load = async () => {
-    const [active, all, quotes] = await Promise.all([
-      base44.entities.RecurringCharge.filter({ active: true }),
+    const [all, quotesData] = await Promise.all([
       base44.entities.RecurringCharge.list("-created_date", 500),
       base44.entities.Quote.list("-created_date", 500),
     ]);
     const validQuoteIds = new Set(
-      quotes.filter(q => q.status === "Aceptada" || q.status === "Ejecutada").map(q => q.id)
+      quotesData.filter(q => q.status === "Aceptada" || q.status === "Ejecutada").map(q => q.id)
     );
-    setCharges(active.filter(c => validQuoteIds.has(c.quote_id)));
-    setAllCharges(all.filter(c => validQuoteIds.has(c.quote_id)));
+    const valid = all.filter(c => validQuoteIds.has(c.quote_id));
+    setCharges(valid);
+    setQuotes(quotesData);
+    // Si el mes actual no tiene cobros, abrir el último mes con registros
+    setMonthDate(prev => {
+      const key = format(prev, "yyyy-MM");
+      if (valid.some(c => chargeMonthKey(c) === key)) return prev;
+      const keys = valid.map(chargeMonthKey).filter(Boolean).sort();
+      if (keys.length === 0) return prev;
+      return parseISO(`${keys[keys.length - 1]}-01`);
+    });
     setLoading(false);
   };
 
   useEffect(() => { load(); }, []);
 
-  const handleDeactivate = async (charge) => {
-    if (!confirm(`¿Desactivar servicio mensual de ${charge.client_name}?`)) return;
-    await base44.entities.RecurringCharge.update(charge.id, { active: false });
-    load();
+  const quotesById = useMemo(() => {
+    const map = {};
+    quotes.forEach(q => { map[q.id] = q; });
+    return map;
+  }, [quotes]);
+
+  const monthKey = format(monthDate, "yyyy-MM");
+  const isCurrentMonth = monthKey === format(new Date(), "yyyy-MM");
+
+  const monthCharges = useMemo(() => charges
+    .filter(c => chargeMonthKey(c) === monthKey)
+    .map(c => ({ ...c, _status: getChargeStatus(c) }))
+    .sort((a, b) => {
+      const diff = STATUS_ORDER[a._status] - STATUS_ORDER[b._status];
+      if (diff !== 0) return diff;
+      return new Date(a.next_billing_date || 0) - new Date(b.next_billing_date || 0);
+    }), [charges, monthKey]);
+
+  const paidCharges = monthCharges.filter(c => c._status === "pagado");
+  const pendingCharges = monthCharges.filter(c => c._status !== "pagado");
+  const overdueCharges = monthCharges.filter(c => c._status === "vencido");
+
+  const totalPaid = paidCharges.reduce((s, c) => s + (c.amount || 0), 0);
+  const totalPending = pendingCharges.reduce((s, c) => s + (c.amount || 0), 0);
+  const totalOverdue = overdueCharges.reduce((s, c) => s + (c.amount || 0), 0);
+  const totalMonth = totalPaid + totalPending;
+  const paidPercent = totalMonth > 0 ? Math.round((totalPaid / totalMonth) * 100) : 0;
+
+  const clients = [...new Set(monthCharges.map(c => c.client_name))];
+  const paidClients = [...new Set(paidCharges.map(c => c.client_name))];
+
+  const visible = monthCharges
+    .filter(c => {
+      if (filter === "pagados") return c._status === "pagado";
+      if (filter === "pendientes") return c._status !== "pagado";
+      return true;
+    })
+    .filter(c => {
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      return (c.client_name || "").toLowerCase().includes(q)
+        || (c.client_company || "").toLowerCase().includes(q)
+        || (c.title || "").toLowerCase().includes(q);
+    });
+
+  const handlePay = async (charge, file) => {
+    setBusyId(charge.id);
+    try {
+      let proofUrl = null;
+      if (file) {
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        proofUrl = file_url;
+      }
+      await markChargePaid(charge, proofUrl);
+      await load();
+    } finally {
+      setBusyId(null);
+    }
   };
 
-  const formatCLP = (n) => `$${Math.round(n || 0).toLocaleString("es-CL")}`;
-
-  const getStatus = (charge) => {
-    if (!charge.next_billing_date) return "ok";
-    const d = parseISO(charge.next_billing_date);
-    if (isPast(d) || isToday(d)) return "vencido";
-    if (d <= addDays(new Date(), 5)) return "proximo";
-    return "ok";
+  const handlePickProof = (charge) => {
+    setPendingFileCharge(charge);
+    fileInputRef.current?.click();
   };
+
+  const onFileSelected = async (e) => {
+    const file = e.target.files?.[0];
+    const charge = pendingFileCharge;
+    e.target.value = "";
+    setPendingFileCharge(null);
+    if (file && charge) await handlePay(charge, file);
+  };
+
+  const changeMonth = (delta) => setMonthDate(d => addMonths(d, delta));
 
   if (loading) return null;
 
-  const pending = charges.filter(c => c.status === "pendiente");
-
-  // Group by client
-  const clientMap = {};
-  pending.forEach(c => {
-    if (!clientMap[c.client_name]) clientMap[c.client_name] = [];
-    clientMap[c.client_name].push(c);
-  });
-
-  const clientList = Object.entries(clientMap).map(([name, clientCharges]) => {
-    const worstStatus = clientCharges.some(c => getStatus(c) === "vencido") ? "vencido"
-      : clientCharges.some(c => getStatus(c) === "proximo") ? "proximo" : "ok";
-    const total = clientCharges.reduce((s, c) => s + (c.amount || 0), 0);
-    return { name, charges: clientCharges, worstStatus, total };
-  }).sort((a, b) => {
-    const order = { vencido: 0, proximo: 1, ok: 2 };
-    return order[a.worstStatus] - order[b.worstStatus];
-  });
-
-  const totalMensual = pending.reduce((s, c) => s + (c.amount || 0), 0);
-  const vencidosCount = clientList.filter(c => c.worstStatus === "vencido").length;
-  const proximosCount = clientList.filter(c => c.worstStatus === "proximo").length;
-
-  if (charges.length === 0) return null;
-
-  const selectedClientCharges = selectedClient
-    ? allCharges.filter(c => c.client_name === selectedClient)
-    : [];
-
   return (
     <>
-      <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+      <div className="bg-white rounded-2xl border border-gray-100 mb-6 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-violet-50 rounded-xl flex items-center justify-center">
-              <RefreshCw className="w-4 h-4 text-violet-500" />
+        <div className="px-6 pt-5 pb-4 border-b border-gray-100">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 bg-violet-50 rounded-xl flex items-center justify-center">
+                <RefreshCw className="w-4 h-4 text-violet-500" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Monitoreo de Servicios Mensuales</p>
+                <p className="text-xs text-slate-400">
+                  {clients.length} cliente(s) · {monthCharges.length} cobro(s) en {format(monthDate, "MMMM yyyy", { locale: es })}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-900">Clientes Activos de Mensualidades</p>
-              <p className="text-xs text-slate-400">
-                {clientList.length} cliente(s) · <span className="font-semibold text-slate-700">{formatCLP(totalMensual)}/mes</span>
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2 text-xs">
-            {vencidosCount > 0 && (
-              <span className="flex items-center gap-1 bg-red-100 text-red-700 px-2.5 py-1 rounded-full font-bold border border-red-200">
-                <AlertTriangle className="w-3 h-3" /> {vencidosCount} VENCIDO(S)
-              </span>
-            )}
-            {proximosCount > 0 && (
-              <span className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2.5 py-1 rounded-full font-medium">
-                <Clock className="w-3 h-3" /> {proximosCount} próximo(s)
-              </span>
-            )}
-          </div>
-        </div>
 
-        {/* Summary totals row */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="bg-slate-50 rounded-xl p-3 text-center">
-            <p className="text-lg font-bold text-slate-900">{clientList.length}</p>
-            <p className="text-xs text-slate-400">Clientes activos</p>
-          </div>
-          <div className="bg-violet-50 rounded-xl p-3 text-center">
-            <p className="text-lg font-bold text-violet-700">{formatCLP(totalMensual)}</p>
-            <p className="text-xs text-violet-400">Total mensual</p>
-          </div>
-          <div className={`rounded-xl p-3 text-center ${vencidosCount > 0 ? "bg-red-50" : "bg-emerald-50"}`}>
-            <p className={`text-lg font-bold ${vencidosCount > 0 ? "text-red-700" : "text-emerald-700"}`}>
-              {vencidosCount > 0 ? `${vencidosCount} vencido(s)` : "Al día ✓"}
-            </p>
-            <p className={`text-xs ${vencidosCount > 0 ? "text-red-400" : "text-emerald-400"}`}>Estado general</p>
-          </div>
-        </div>
-
-        {/* Client rows */}
-        <div className="space-y-2">
-          {clientList.map(({ name, charges: cCharges, worstStatus, total }) => {
-            const nextDate = cCharges[0]?.next_billing_date;
-            const daysLeft = nextDate ? differenceInDays(parseISO(nextDate), new Date()) : null;
-            return (
+            {/* Month switcher */}
+            <div className="flex items-center gap-1 bg-slate-50 rounded-xl p-1">
               <button
-                key={name}
-                onClick={() => setSelectedClient(name)}
-                className={`w-full text-left rounded-xl border px-4 py-3 flex items-center gap-3 hover:shadow-md transition-all ${
-                  worstStatus === "vencido"
-                    ? "border-red-300 bg-red-50 hover:bg-red-100"
-                    : worstStatus === "proximo"
-                    ? "border-amber-200 bg-amber-50/60 hover:bg-amber-100"
-                    : "border-gray-100 bg-gray-50/40 hover:bg-gray-100"
-                }`}>
-                {/* Status dot */}
+                onClick={() => changeMonth(-1)}
+                className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-900 transition-colors"
+                title="Mes anterior"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="text-xs font-semibold text-slate-700 capitalize px-2 min-w-[110px] text-center">
+                {format(monthDate, "MMMM yyyy", { locale: es })}
+              </span>
+              <button
+                onClick={() => changeMonth(1)}
+                className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-900 transition-colors"
+                title="Mes siguiente"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* KPIs */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+            <div className="bg-emerald-50 rounded-xl p-3">
+              <div className="flex items-center gap-1.5">
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                <p className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wide">Cobrado</p>
+              </div>
+              <p className="text-lg font-bold text-emerald-700 mt-1">{formatCLP(totalPaid)}</p>
+              <p className="text-[11px] text-emerald-500">{paidCharges.length} cobro(s) pagados</p>
+            </div>
+            <div className="bg-slate-50 rounded-xl p-3">
+              <div className="flex items-center gap-1.5">
+                <CalendarClock className="w-3.5 h-3.5 text-slate-500" />
+                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Por cobrar</p>
+              </div>
+              <p className="text-lg font-bold text-slate-900 mt-1">{formatCLP(totalPending)}</p>
+              <p className="text-[11px] text-slate-400">{pendingCharges.length} cobro(s) pendientes</p>
+            </div>
+            <div className={`rounded-xl p-3 ${totalOverdue > 0 ? "bg-red-50" : "bg-slate-50"}`}>
+              <div className="flex items-center gap-1.5">
+                <AlertTriangle className={`w-3.5 h-3.5 ${totalOverdue > 0 ? "text-red-600" : "text-slate-400"}`} />
+                <p className={`text-[11px] font-semibold uppercase tracking-wide ${totalOverdue > 0 ? "text-red-600" : "text-slate-400"}`}>Vencido</p>
+              </div>
+              <p className={`text-lg font-bold mt-1 ${totalOverdue > 0 ? "text-red-700" : "text-slate-900"}`}>{formatCLP(totalOverdue)}</p>
+              <p className={`text-[11px] ${totalOverdue > 0 ? "text-red-500" : "text-slate-400"}`}>{overdueCharges.length} cobro(s) atrasados</p>
+            </div>
+            <div className="bg-violet-50 rounded-xl p-3">
+              <div className="flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-violet-600" />
+                <p className="text-[11px] font-semibold text-violet-600 uppercase tracking-wide">Clientes</p>
+              </div>
+              <p className="text-lg font-bold text-violet-700 mt-1">{paidClients.length} de {clients.length}</p>
+              <p className="text-[11px] text-violet-500">clientes con pago registrado</p>
+            </div>
+          </div>
+
+          {/* Progress */}
+          {totalMonth > 0 && (
+            <div className="mt-4">
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <span className="text-slate-400">Avance de cobro del mes</span>
+                <span className="font-semibold text-slate-700">{paidPercent}%</span>
+              </div>
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${paidPercent === 100 ? "bg-emerald-500" : "bg-slate-900"}`}
+                  style={{ width: `${paidPercent}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Filters */}
+        <div className="px-6 py-3 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex gap-1 bg-slate-100 rounded-xl p-1">
+            {FILTERS.map(f => {
+              const count = f.key === "pagados" ? paidCharges.length : f.key === "pendientes" ? pendingCharges.length : monthCharges.length;
+              return (
+                <button
+                  key={f.key}
+                  onClick={() => setFilter(f.key)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    filter === f.key ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  {f.label} ({count})
+                </button>
+              );
+            })}
+          </div>
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar cliente o servicio..."
+              className="pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg w-56 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+            />
+          </div>
+        </div>
+
+        {/* Rows */}
+        <div className="p-4 space-y-2">
+          {monthCharges.length === 0 && (
+            <div className="text-center py-10">
+              <RefreshCw className="w-7 h-7 text-slate-200 mx-auto mb-2" />
+              <p className="text-sm text-slate-400">No hay cobros de mensualidades en {format(monthDate, "MMMM yyyy", { locale: es })}</p>
+              {!isCurrentMonth && (
+                <button onClick={() => setMonthDate(startOfMonth(new Date()))} className="text-xs text-blue-500 hover:text-blue-700 mt-2">
+                  Volver al mes actual
+                </button>
+              )}
+            </div>
+          )}
+
+          {monthCharges.length > 0 && visible.length === 0 && (
+            <p className="text-sm text-slate-400 text-center py-8">Sin resultados para este filtro</p>
+          )}
+
+          {visible.map(c => {
+            const s = c._status;
+            const busy = busyId === c.id;
+            const lateDays = daysOverdue(c);
+            return (
+              <div
+                key={c.id}
+                className={`rounded-xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3 ${
+                  s === "pagado" ? "border-gray-100 bg-white" :
+                  s === "vencido" ? "border-red-200 bg-red-50" :
+                  s === "proximo" ? "border-amber-200 bg-amber-50" : "border-gray-100 bg-gray-50/50"
+                }`}
+              >
                 <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                  worstStatus === "vencido" ? "bg-red-500 animate-pulse" :
-                  worstStatus === "proximo" ? "bg-amber-400" :
-                  "bg-emerald-400"
+                  s === "pagado" ? "bg-emerald-400" :
+                  s === "vencido" ? "bg-red-500 animate-pulse" :
+                  s === "proximo" ? "bg-amber-400" : "bg-slate-300"
                 }`} />
 
-                {/* Client info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className={`text-sm font-bold truncate ${
-                      worstStatus === "vencido" ? "text-red-800" : "text-slate-900"
-                    }`}>{name}</p>
-                    {cCharges[0]?.client_company && (
-                      <span className="text-xs text-slate-400 truncate hidden sm:inline">· {cCharges[0].client_company}</span>
-                    )}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => setHistoryClient(c.client_name)}
+                      className="text-sm font-bold text-slate-900 hover:text-blue-600 truncate flex items-center gap-1"
+                      title="Ver historial del cliente"
+                    >
+                      {c.client_name}
+                      <History className="w-3 h-3 text-slate-300" />
+                    </button>
+                    {c.client_company && <span className="text-xs text-slate-400 truncate">· {c.client_company}</span>}
                   </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {worstStatus === "vencido" && (
-                      <span className="flex items-center gap-1 text-xs font-bold text-red-600">
-                        <AlertTriangle className="w-3 h-3" />
-                        PAGO VENCIDO
-                      </span>
+                  <p className="text-xs text-slate-500 truncate">{c.title || "Servicio mensual"}</p>
+                  <p className={`text-xs mt-0.5 ${
+                    s === "pagado" ? "text-emerald-600" :
+                    s === "vencido" ? "text-red-600 font-semibold" :
+                    s === "proximo" ? "text-amber-600" : "text-slate-400"
+                  }`}>
+                    {s === "pagado" && `✓ Pagado${c.paid_date ? ` el ${format(parseISO(c.paid_date), "dd MMM yyyy", { locale: es })}` : ""}`}
+                    {s === "vencido" && `⚠ Venció el ${format(parseISO(c.next_billing_date), "dd MMM yyyy", { locale: es })}${lateDays > 0 ? ` · ${lateDays} día(s) de atraso` : ""}`}
+                    {s === "proximo" && `🔔 Vence el ${format(parseISO(c.next_billing_date), "dd MMM yyyy", { locale: es })}`}
+                    {s === "programado" && `Programado: ${format(parseISO(c.next_billing_date), "dd MMM yyyy", { locale: es })}`}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 sm:justify-end shrink-0">
+                  <div className="text-right">
+                    <p className={`text-sm font-bold ${s === "vencido" ? "text-red-700" : "text-slate-900"}`}>{formatCLP(c.amount)}</p>
+                    <p className={`text-[11px] font-medium ${
+                      s === "pagado" ? "text-emerald-600" :
+                      s === "vencido" ? "text-red-500" :
+                      s === "proximo" ? "text-amber-600" : "text-slate-400"
+                    }`}>
+                      {s === "pagado" ? "Pagado" : s === "vencido" ? "Vencido" : s === "proximo" ? "Por vencer" : "Pendiente"}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    {c.payment_proof_url && (
+                      <a
+                        href={c.payment_proof_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100"
+                        title="Ver comprobante"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </a>
                     )}
-                    {worstStatus === "proximo" && (
-                      <span className="flex items-center gap-1 text-xs font-semibold text-amber-600">
-                        <Clock className="w-3 h-3" />
-                        Vence en {daysLeft !== null ? `${daysLeft} día(s)` : "—"}
-                      </span>
-                    )}
-                    {worstStatus === "ok" && nextDate && (
-                      <span className="text-xs text-slate-400">
-                        Próximo cobro: {format(parseISO(nextDate), "dd MMM yyyy", { locale: es })}
-                      </span>
-                    )}
-                    {cCharges.length > 1 && (
-                      <span className="text-xs text-slate-400">· {cCharges.length} servicios</span>
+                    {s !== "pagado" && (
+                      <>
+                        <button
+                          onClick={() => handlePay(c, null)}
+                          disabled={busy}
+                          className="flex items-center gap-1.5 bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+                        >
+                          {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+                          Marcar pagado
+                        </button>
+                        <button
+                          onClick={() => handlePickProof(c)}
+                          disabled={busy}
+                          className="p-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50"
+                          title="Pagar y adjuntar comprobante"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
-
-                {/* Amount */}
-                <div className="text-right shrink-0">
-                  <p className={`text-sm font-bold ${
-                    worstStatus === "vencido" ? "text-red-700" : "text-slate-900"
-                  }`}>{formatCLP(total)}</p>
-                  <p className="text-xs text-slate-400">mensual</p>
-                </div>
-
-                {/* Alert icon for overdue */}
-                {worstStatus === "vencido" && (
-                  <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />
-                )}
-              </button>
+              </div>
             );
           })}
         </div>
       </div>
 
-      {/* Detail Modal */}
-      {selectedClient && (
-        <ClientDetailModal
-          client={selectedClient}
-          charges={selectedClientCharges}
-          onClose={() => setSelectedClient(null)}
-          onPaid={() => { load(); setSelectedClient(null); }}
-          onDeactivate={handleDeactivate}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.png,.jpg,.jpeg,.webp"
+        onChange={onFileSelected}
+        className="hidden"
+      />
+
+      {historyClient && (
+        <ClientChargesModal
+          clientName={historyClient}
+          charges={charges.filter(c => c.client_name === historyClient)}
+          quotesById={quotesById}
+          onClose={() => setHistoryClient(null)}
         />
       )}
     </>
