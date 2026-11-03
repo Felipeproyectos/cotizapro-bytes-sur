@@ -56,17 +56,23 @@ export default function PaymentHistoryModal({ charge, payments, onClose }) {
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
                   {p.paid_date ? `Pagado: ${format(new Date(p.paid_date), "dd MMM yyyy", { locale: es })}` : "Sin fecha de pago"}
+                  {p.invoice_number ? ` · Factura N° ${p.invoice_number}` : ""}
                 </p>
               </div>
               <div className="text-right shrink-0">
                 <p className="text-sm font-bold text-slate-900">{formatCLP(p.amount)}</p>
-                {p.payment_proof_url ? (
-                  <button onClick={() => openProof(p.payment_proof_url)} className="text-xs text-blue-500 hover:text-blue-700 inline-flex items-center gap-1 mt-0.5">
-                    <Eye className="w-3 h-3" /> Comprobante
-                  </button>
-                ) : (
-                  <p className="text-[11px] text-emerald-600 mt-0.5">Pagado</p>
-                )}
+                <div className="flex items-center justify-end gap-2 mt-0.5">
+                  {(p.invoice_url || p.payment_proof_url) && (
+                    <button onClick={() => openProof(p.invoice_url || p.payment_proof_url)} className="text-xs text-blue-500 hover:text-blue-700 inline-flex items-center gap-1">
+                      <Receipt className="w-3 h-3" /> Factura
+                    </button>
+                  )}
+                  {p.payment_proof_url && p.payment_proof_url !== p.invoice_url && (
+                    <button onClick={() => openProof(p.payment_proof_url)} className="text-xs text-blue-500 hover:text-blue-700 inline-flex items-center gap-1">
+                      <Eye className="w-3 h-3" /> Comprobante
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}

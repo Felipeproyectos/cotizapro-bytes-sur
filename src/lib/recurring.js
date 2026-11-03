@@ -1,5 +1,6 @@
 import { base44 } from "@/api/base44Client";
 import {
+  addMonths,
   endOfMonth,
   format,
   isAfter,
@@ -47,12 +48,34 @@ export function daysLate(charge, monthDate) {
   return diff > 0 ? diff : 0;
 }
 
+// Meses impagos de un servicio hasta el mes indicado (incluye meses anteriores sin pagar)
+export function pendingMonths(charge, payments, upToMonthDate, monthsBack = 12) {
+  const current = startOfMonth(upToMonthDate);
+  const floor = addMonths(current, -monthsBack);
+  const chargeStart = charge.start_date ? startOfMonth(parseISO(charge.start_date)) : null;
+  let cursor = chargeStart && isAfter(chargeStart, floor) ? chargeStart : floor;
+  const rows = [];
+  while (!isAfter(cursor, current)) {
+    if (isActiveInMonth(charge, cursor) && !findPayment(payments, charge.id, monthKeyOf(cursor))) {
+      rows.push({
+        charge,
+        monthDate: cursor,
+        monthKey: monthKeyOf(cursor),
+        payment: null,
+        status: chargeStatus(charge, cursor, null),
+      });
+    }
+    cursor = addMonths(cursor, 1);
+  }
+  return rows;
+}
+
 // Registra el pago del mes: la alerta desaparece y queda en el historial
-export async function registerPayment(charge, monthDate, file) {
-  let proof = null;
-  if (file) {
-    const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file });
-    proof = file_uri;
+export async function registerPayment(charge, monthDate, data = {}) {
+  let invoiceUrl = null;
+  if (data.invoiceFile) {
+    const { file_uri } = await base44.integrations.Core.UploadPrivateFile({ file: data.invoiceFile });
+    invoiceUrl = file_uri;
   }
   return base44.entities.ChargePayment.create({
     charge_id: charge.id,
@@ -61,9 +84,10 @@ export async function registerPayment(charge, monthDate, file) {
     service_title: charge.title || "Servicio mensual",
     period: monthKeyOf(monthDate),
     due_date: format(dueDateOf(charge, monthDate), "yyyy-MM-dd"),
-    amount: charge.amount || 0,
-    paid_date: format(new Date(), "yyyy-MM-dd"),
-    ...(proof ? { payment_proof_url: proof } : {}),
+    amount: data.amount ?? charge.amount ?? 0,
+    paid_date: data.paidDate || format(new Date(), "yyyy-MM-dd"),
+    ...(data.invoiceNumber ? { invoice_number: data.invoiceNumber } : {}),
+    ...(invoiceUrl ? { invoice_url: invoiceUrl } : {}),
   });
 }
 

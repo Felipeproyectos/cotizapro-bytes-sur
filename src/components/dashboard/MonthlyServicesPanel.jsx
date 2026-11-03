@@ -4,10 +4,11 @@ import { addMonths, format, startOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 import { RefreshCw, ChevronLeft, ChevronRight, CheckCircle, AlertTriangle, CalendarClock, Users, Plus } from "lucide-react";
 import {
-  monthKeyOf, isActiveInMonth, findPayment, chargeStatus, dueDateOf, formatCLP, registerPayment,
+  monthKeyOf, isActiveInMonth, findPayment, dueDateOf, pendingMonths, formatCLP, registerPayment,
 } from "@/lib/recurring";
 import ServiceRow from "@/components/services/ServiceRow";
 import PaymentHistoryModal from "@/components/services/PaymentHistoryModal";
+import PaymentRegisterModal from "@/components/services/PaymentRegisterModal";
 import ServiceFormModal from "@/components/services/ServiceFormModal";
 
 export default function MonthlyServicesPanel() {
@@ -15,8 +16,9 @@ export default function MonthlyServicesPanel() {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [monthDate, setMonthDate] = useState(startOfMonth(new Date()));
-  const [busyId, setBusyId] = useState(null);
+  const [busyKey, setBusyKey] = useState(null);
   const [history, setHistory] = useState(null);
+  const [payTarget, setPayTarget] = useState(null);
   const [showPaid, setShowPaid] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
 
@@ -34,43 +36,48 @@ export default function MonthlyServicesPanel() {
 
   const monthKey = monthKeyOf(monthDate);
 
-  const rows = useMemo(() => charges
-    .filter((c) => isActiveInMonth(c, monthDate))
-    .map((c) => {
-      const payment = findPayment(payments, c.id, monthKey);
-      return { charge: c, payment, status: chargeStatus(c, monthDate, payment) };
-    }), [charges, payments, monthKey, monthDate]);
+  // Cobros pendientes: incluye meses anteriores impagos de cada servicio
+  const pending = useMemo(() => {
+    const rows = [];
+    charges.forEach((c) => rows.push(...pendingMonths(c, payments, monthDate)));
+    return rows.sort((a, b) => dueDateOf(a.charge, a.monthDate) - dueDateOf(b.charge, b.monthDate));
+  }, [charges, payments, monthDate]);
 
-  const pending = rows
-    .filter((r) => !r.payment)
-    .sort((a, b) => dueDateOf(a.charge, monthDate) - dueDateOf(b.charge, monthDate));
-  const paid = rows
+  // Pagados del mes que se está viendo
+  const paid = useMemo(() => charges
+    .filter((c) => isActiveInMonth(c, monthDate))
+    .map((c) => ({ charge: c, monthDate, payment: findPayment(payments, c.id, monthKey) }))
     .filter((r) => r.payment)
-    .sort((a, b) => new Date(b.payment.paid_date || 0) - new Date(a.payment.paid_date || 0));
+    .sort((a, b) => new Date(b.payment.paid_date || 0) - new Date(a.payment.paid_date || 0)),
+    [charges, payments, monthDate, monthKey]);
+
+  const activeCount = charges.filter((c) => isActiveInMonth(c, monthDate)).length;
 
   const totalPaid = paid.reduce((s, r) => s + (r.payment.amount || 0), 0);
   const totalPending = pending.reduce((s, r) => s + (r.charge.amount || 0), 0);
   const overdue = pending.filter((r) => r.status === "vencido");
   const totalOverdue = overdue.reduce((s, r) => s + (r.charge.amount || 0), 0);
 
-  const handlePaid = async (charge, file) => {
-    setBusyId(charge.id);
+  const handleRegister = async (data) => {
+    if (!payTarget) return;
+    setBusyKey(`${payTarget.charge.id}|${monthKeyOf(payTarget.monthDate)}`);
     try {
-      await registerPayment(charge, monthDate, file);
+      await registerPayment(payTarget.charge, payTarget.monthDate, data);
+      setPayTarget(null);
       await load();
     } finally {
-      setBusyId(null);
+      setBusyKey(null);
     }
   };
 
   const handleUndo = async (payment) => {
     if (!confirm("¿Anular este pago? Volverá a aparecer como pendiente.")) return;
-    setBusyId(payment.charge_id);
+    setBusyKey(payment.charge_id);
     try {
       await base44.entities.ChargePayment.delete(payment.id);
       await load();
     } finally {
-      setBusyId(null);
+      setBusyKey(null);
     }
   };
 
@@ -88,28 +95,29 @@ export default function MonthlyServicesPanel() {
               <div>
                 <p className="text-sm font-semibold text-slate-900">Servicios mensuales</p>
                 <p className="text-xs text-slate-400">
-                  {paid.length} de {rows.length} pagados en {format(monthDate, "MMMM yyyy", { locale: es })}
+                  {paid.length} de {activeCount} pagados en {format(monthDate, "MMMM yyyy", { locale: es })}
+                  {pending.length > 0 ? ` · ${pending.length} cobro(s) pendientes` : ""}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-            <button
-              onClick={() => setFormOpen(true)}
-              className="flex items-center gap-1.5 bg-slate-900 text-white px-3 py-2 rounded-xl text-xs font-medium hover:bg-slate-800 transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" /> Nuevo servicio
-            </button>
-            <div className="flex items-center gap-1 bg-slate-50 rounded-xl p-1">
-              <button onClick={() => setMonthDate((d) => addMonths(d, -1))} className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-900" title="Mes anterior">
-                <ChevronLeft className="w-4 h-4" />
+              <button
+                onClick={() => setFormOpen(true)}
+                className="flex items-center gap-1.5 bg-slate-900 text-white px-3 py-2 rounded-xl text-xs font-medium hover:bg-slate-800 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" /> Nuevo servicio
               </button>
-              <span className="text-xs font-semibold text-slate-700 capitalize px-2 min-w-[110px] text-center">
-                {format(monthDate, "MMMM yyyy", { locale: es })}
-              </span>
-              <button onClick={() => setMonthDate((d) => addMonths(d, 1))} className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-900" title="Mes siguiente">
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+              <div className="flex items-center gap-1 bg-slate-50 rounded-xl p-1">
+                <button onClick={() => setMonthDate((d) => addMonths(d, -1))} className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-900" title="Mes anterior">
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-xs font-semibold text-slate-700 capitalize px-2 min-w-[110px] text-center">
+                  {format(monthDate, "MMMM yyyy", { locale: es })}
+                </span>
+                <button onClick={() => setMonthDate((d) => addMonths(d, 1))} className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-900" title="Mes siguiente">
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -120,7 +128,7 @@ export default function MonthlyServicesPanel() {
                 <p className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wide">Cobrado</p>
               </div>
               <p className="text-lg font-bold text-emerald-700 mt-1">{formatCLP(totalPaid)}</p>
-              <p className="text-[11px] text-emerald-500">{paid.length} pago(s)</p>
+              <p className="text-[11px] text-emerald-500">{paid.length} pago(s) del mes</p>
             </div>
             <div className="bg-slate-50 rounded-xl p-3">
               <div className="flex items-center gap-1.5">
@@ -128,7 +136,7 @@ export default function MonthlyServicesPanel() {
                 <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Por cobrar</p>
               </div>
               <p className="text-lg font-bold text-slate-900 mt-1">{formatCLP(totalPending)}</p>
-              <p className="text-[11px] text-slate-400">{pending.length} pendiente(s)</p>
+              <p className="text-[11px] text-slate-400">{pending.length} cobro(s) pendientes</p>
             </div>
             <div className={`rounded-xl p-3 ${totalOverdue > 0 ? "bg-red-50" : "bg-slate-50"}`}>
               <div className="flex items-center gap-1.5">
@@ -143,34 +151,40 @@ export default function MonthlyServicesPanel() {
                 <Users className="w-3.5 h-3.5 text-violet-600" />
                 <p className="text-[11px] font-semibold text-violet-600 uppercase tracking-wide">Clientes</p>
               </div>
-              <p className="text-lg font-bold text-violet-700 mt-1">{paid.length} de {rows.length}</p>
+              <p className="text-lg font-bold text-violet-700 mt-1">{paid.length} de {activeCount}</p>
               <p className="text-[11px] text-violet-500">con pago este mes</p>
             </div>
           </div>
         </div>
 
         <div className="p-4 space-y-2">
-          {rows.length === 0 && (
+          {pending.length === 0 && activeCount === 0 && (
             <div className="text-center py-10">
               <RefreshCw className="w-7 h-7 text-slate-200 mx-auto mb-2" />
               <p className="text-sm text-slate-400">No hay servicios vigentes en {format(monthDate, "MMMM yyyy", { locale: es })}</p>
             </div>
           )}
 
-          {pending.map((r) => (
-            <ServiceRow
-              key={r.charge.id}
-              charge={r.charge}
-              payment={null}
-              monthDate={monthDate}
-              busy={busyId === r.charge.id}
-              onPaid={handlePaid}
-              onHistory={(charge) => setHistory(charge)}
-            />
-          ))}
+          {pending.map((r) => {
+            const key = `${r.charge.id}|${r.monthKey}`;
+            return (
+              <ServiceRow
+                key={key}
+                charge={r.charge}
+                payment={null}
+                monthDate={r.monthDate}
+                periodLabel={r.monthKey !== monthKey ? format(r.monthDate, "MMM yyyy", { locale: es }) : null}
+                busy={busyKey === key || busyKey === r.charge.id}
+                onRegister={(charge, rowMonth) => setPayTarget({ charge, monthDate: rowMonth })}
+                onHistory={(charge) => setHistory(charge)}
+              />
+            );
+          })}
 
-          {rows.length > 0 && pending.length === 0 && (
-            <p className="text-center text-xs text-emerald-600 font-medium py-3">Todos los servicios del mes están pagados 🎉</p>
+          {activeCount > 0 && pending.length === 0 && (
+            <p className="text-center text-xs text-emerald-600 font-medium py-3">
+              Todos los servicios están al día hasta {format(monthDate, "MMMM yyyy", { locale: es })} 🎉
+            </p>
           )}
 
           {paid.length > 0 && (
@@ -190,9 +204,9 @@ export default function MonthlyServicesPanel() {
                       key={r.charge.id}
                       charge={r.charge}
                       payment={r.payment}
-                      monthDate={monthDate}
-                      busy={busyId === r.charge.id}
-                      onPaid={handlePaid}
+                      monthDate={r.monthDate}
+                      busy={busyKey === r.charge.id}
+                      onRegister={(charge, rowMonth) => setPayTarget({ charge, monthDate: rowMonth })}
                       onUndo={handleUndo}
                       onHistory={(charge) => setHistory(charge)}
                     />
@@ -203,6 +217,16 @@ export default function MonthlyServicesPanel() {
           )}
         </div>
       </div>
+
+      {payTarget && (
+        <PaymentRegisterModal
+          charge={payTarget.charge}
+          monthDate={payTarget.monthDate}
+          busy={!!busyKey}
+          onClose={() => setPayTarget(null)}
+          onConfirm={handleRegister}
+        />
+      )}
 
       {formOpen && (
         <ServiceFormModal

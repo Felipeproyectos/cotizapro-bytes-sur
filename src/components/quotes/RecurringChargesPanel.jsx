@@ -6,6 +6,7 @@ import { monthKeyOf, isActiveInMonth, findPayment, chargeStatus, formatCLP, regi
 import ServiceRow from "@/components/services/ServiceRow";
 import ServiceFormModal from "@/components/services/ServiceFormModal";
 import PaymentHistoryModal from "@/components/services/PaymentHistoryModal";
+import PaymentRegisterModal from "@/components/services/PaymentRegisterModal";
 
 const STATUS_RANK = { vencido: 0, pendiente: 1, pagado: 2, fuera: 3 };
 
@@ -17,6 +18,7 @@ export default function RecurringChargesPanel() {
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [history, setHistory] = useState(null);
+  const [payTarget, setPayTarget] = useState(null);
 
   const monthDate = startOfMonth(new Date());
   const monthKey = monthKeyOf(monthDate);
@@ -47,10 +49,12 @@ export default function RecurringChargesPanel() {
   const pendingCount = activeItems.length - paidCount;
   const monthlyIncome = activeItems.reduce((s, i) => s + (i.charge.amount || 0), 0);
 
-  const handlePaid = async (charge, file) => {
-    setBusyId(charge.id);
+  const handleRegister = async (data) => {
+    if (!payTarget) return;
+    setBusyId(payTarget.charge.id);
     try {
-      await registerPayment(charge, monthDate, file);
+      await registerPayment(payTarget.charge, payTarget.monthDate, data);
+      setPayTarget(null);
       await load();
     } finally {
       setBusyId(null);
@@ -136,7 +140,7 @@ export default function RecurringChargesPanel() {
               inRange={i.inRange}
               busy={busyId === i.charge.id}
               showAdmin
-              onPaid={handlePaid}
+              onRegister={(charge, rowMonth) => setPayTarget({ charge, monthDate: rowMonth })}
               onUndo={handleUndo}
               onHistory={(charge) => setHistory(charge)}
               onEdit={(charge) => { setEditing(charge); setFormOpen(true); }}
@@ -145,6 +149,16 @@ export default function RecurringChargesPanel() {
             />
           ))}
         </div>
+      )}
+
+      {payTarget && (
+        <PaymentRegisterModal
+          charge={payTarget.charge}
+          monthDate={payTarget.monthDate}
+          busy={!!busyId}
+          onClose={() => setPayTarget(null)}
+          onConfirm={handleRegister}
+        />
       )}
 
       {formOpen && (

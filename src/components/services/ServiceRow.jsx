@@ -1,8 +1,7 @@
-import { useRef } from "react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import {
-  AlertTriangle, CheckCircle, Clock, History, Loader2, Pencil, Power, Trash2, Upload, Eye, Undo2,
+  History, Loader2, Pencil, Power, Trash2, Eye, Undo2, Receipt, CheckCircle,
 } from "lucide-react";
 import { chargeStatus, daysLate, dueDateOf, formatCLP, openProof, vigenciaLabel } from "@/lib/recurring";
 
@@ -14,15 +13,13 @@ const ROW_STYLES = {
 };
 
 export default function ServiceRow({
-  charge, payment, monthDate, inRange = true, busy, showAdmin,
-  onPaid, onUndo, onHistory, onEdit, onToggleActive, onDelete,
+  charge, payment, monthDate, periodLabel, inRange = true, busy, showAdmin,
+  onRegister, onUndo, onHistory, onEdit, onToggleActive, onDelete,
 }) {
-  const fileRef = useRef(null);
   const status = inRange ? chargeStatus(charge, monthDate, payment) : "fuera";
   const due = dueDateOf(charge, monthDate);
   const late = inRange ? daysLate(charge, monthDate) : 0;
-
-  const pickFile = () => fileRef.current?.click();
+  const invoiceUrl = payment?.invoice_url || payment?.payment_proof_url;
 
   return (
     <div className={`rounded-xl border px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3 ${ROW_STYLES[status]}`}>
@@ -43,6 +40,11 @@ export default function ServiceRow({
             <History className="w-3 h-3 text-slate-300" />
           </button>
           {charge.client_company && <span className="text-xs text-slate-400 truncate">· {charge.client_company}</span>}
+          {periodLabel && (
+            <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-white border border-gray-200 text-slate-500 capitalize">
+              {periodLabel}
+            </span>
+          )}
         </div>
         <p className="text-xs text-slate-500 truncate">{charge.title || "Servicio mensual"}</p>
         <p className={`text-xs mt-0.5 ${
@@ -55,7 +57,10 @@ export default function ServiceRow({
           {status === "pendiente" && `Cobro día ${charge.billing_day} · vence ${format(due, "dd MMM", { locale: es })}`}
           {status === "fuera" && (charge.active === false ? "Servicio pausado" : "Fuera de vigencia este mes")}
         </p>
-        <p className="text-[11px] text-slate-400 mt-0.5">Vigencia {vigenciaLabel(charge)}</p>
+        <p className="text-[11px] text-slate-400 mt-0.5">
+          Vigencia {vigenciaLabel(charge)}
+          {payment?.invoice_number ? ` · Factura N° ${payment.invoice_number}` : ""}
+        </p>
       </div>
 
       <div className="flex items-center gap-2 sm:justify-end shrink-0">
@@ -73,26 +78,26 @@ export default function ServiceRow({
         </div>
 
         <div className="flex items-center gap-1">
-          {payment?.payment_proof_url && (
+          {invoiceUrl && (
+            <button onClick={() => openProof(invoiceUrl)} className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100" title="Ver factura">
+              <Receipt className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {payment?.payment_proof_url && payment.payment_proof_url !== invoiceUrl && (
             <button onClick={() => openProof(payment.payment_proof_url)} className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100" title="Ver comprobante">
               <Eye className="w-3.5 h-3.5" />
             </button>
           )}
 
           {inRange && !payment && (
-            <>
-              <button
-                onClick={() => onPaid?.(charge, null)}
-                disabled={busy}
-                className="flex items-center gap-1.5 bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-emerald-600 disabled:opacity-50 transition-colors"
-              >
-                {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
-                Marcar pagado
-              </button>
-              <button onClick={pickFile} disabled={busy} className="p-2 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50" title="Pagar y adjuntar comprobante">
-                <Upload className="w-3.5 h-3.5" />
-              </button>
-            </>
+            <button
+              onClick={() => onRegister?.(charge, monthDate)}
+              disabled={busy}
+              className="flex items-center gap-1.5 bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+            >
+              {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
+              Registrar pago
+            </button>
           )}
 
           {payment && onUndo && (
@@ -116,18 +121,6 @@ export default function ServiceRow({
           )}
         </div>
       </div>
-
-      <input
-        ref={fileRef}
-        type="file"
-        accept=".pdf,.png,.jpg,.jpeg,.webp"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          e.target.value = "";
-          if (file) onPaid?.(charge, file);
-        }}
-      />
     </div>
   );
 }
