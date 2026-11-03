@@ -2,12 +2,13 @@ import { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { addMonths, format, startOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
-import { RefreshCw, ChevronLeft, ChevronRight, CheckCircle, AlertTriangle, CalendarClock, Users } from "lucide-react";
+import { RefreshCw, ChevronLeft, ChevronRight, CheckCircle, AlertTriangle, CalendarClock, Users, Plus } from "lucide-react";
 import {
   monthKeyOf, isActiveInMonth, findPayment, chargeStatus, dueDateOf, formatCLP, registerPayment,
 } from "@/lib/recurring";
 import ServiceRow from "@/components/services/ServiceRow";
 import PaymentHistoryModal from "@/components/services/PaymentHistoryModal";
+import ServiceFormModal from "@/components/services/ServiceFormModal";
 
 export default function MonthlyServicesPanel() {
   const [charges, setCharges] = useState([]);
@@ -17,6 +18,7 @@ export default function MonthlyServicesPanel() {
   const [busyId, setBusyId] = useState(null);
   const [history, setHistory] = useState(null);
   const [showPaid, setShowPaid] = useState(true);
+  const [formOpen, setFormOpen] = useState(false);
 
   const load = async () => {
     const [cs, ps] = await Promise.all([
@@ -90,6 +92,13 @@ export default function MonthlyServicesPanel() {
                 </p>
               </div>
             </div>
+            <div className="flex items-center gap-2">
+            <button
+              onClick={() => setFormOpen(true)}
+              className="flex items-center gap-1.5 bg-slate-900 text-white px-3 py-2 rounded-xl text-xs font-medium hover:bg-slate-800 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" /> Nuevo servicio
+            </button>
             <div className="flex items-center gap-1 bg-slate-50 rounded-xl p-1">
               <button onClick={() => setMonthDate((d) => addMonths(d, -1))} className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-900" title="Mes anterior">
                 <ChevronLeft className="w-4 h-4" />
@@ -100,6 +109,7 @@ export default function MonthlyServicesPanel() {
               <button onClick={() => setMonthDate((d) => addMonths(d, 1))} className="p-1.5 rounded-lg hover:bg-white text-slate-500 hover:text-slate-900" title="Mes siguiente">
                 <ChevronRight className="w-4 h-4" />
               </button>
+            </div>
             </div>
           </div>
 
@@ -193,6 +203,14 @@ export default function MonthlyServicesPanel() {
           )}
         </div>
       </div>
+
+      {formOpen && (
+        <ServiceFormModal
+          service={null}
+          onClose={() => setFormOpen(false)}
+          onSave={() => { setFormOpen(false); load(); }}
+        />
+      )}
 
       {history && (
         <PaymentHistoryModal
