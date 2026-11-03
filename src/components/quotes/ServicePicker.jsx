@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Search, Check, ChevronDown, X } from "lucide-react";
+import { Search, Check, ChevronDown, X, Plus } from "lucide-react";
+import QuickServiceForm from "@/components/services/QuickServiceForm";
 
 const CATEGORY_COLORS = {
   Redes: "bg-blue-100 text-blue-700 border-blue-200",
@@ -15,10 +16,11 @@ const CATEGORY_COLORS = {
   Otro: "bg-gray-100 text-gray-700 border-gray-200",
 };
 
-export default function ServicePicker({ services, value, onChange, placeholder = "Seleccionar servicio" }) {
+export default function ServicePicker({ services, value, onChange, onCreated, placeholder = "Seleccionar servicio" }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("Todas");
+  const [creating, setCreating] = useState(false);
   const ref = useRef(null);
   const selected = services.find(s => s.id === value);
 
@@ -47,6 +49,19 @@ export default function ServicePicker({ services, value, onChange, placeholder =
     setCategory("Todas");
   };
 
+  const closeAll = () => {
+    setCreating(false);
+    setOpen(false);
+    setSearch("");
+    setCategory("Todas");
+  };
+
+  const handleCreated = (svc) => {
+    if (onCreated) onCreated(svc);
+    else onChange(svc.id);
+    closeAll();
+  };
+
   const clear = (e) => {
     e.stopPropagation();
     onChange("");
@@ -56,7 +71,7 @@ export default function ServicePicker({ services, value, onChange, placeholder =
     <div className="relative" ref={ref}>
       <button
         type="button"
-        onClick={() => setOpen(!open)}
+        onClick={() => { setOpen(!open); setCreating(false); }}
         className={`w-full border rounded-lg px-3 py-2 text-sm bg-white focus:outline-none flex items-center justify-between gap-2 transition-colors ${open ? "border-slate-900 ring-2 ring-slate-900/10" : "border-gray-200 hover:border-gray-300"}`}
       >
         <span className={`truncate text-left ${selected ? "text-slate-900 font-medium" : "text-slate-400"}`}>
@@ -79,6 +94,15 @@ export default function ServicePicker({ services, value, onChange, placeholder =
 
       {open && (
         <div className="absolute z-30 mt-1 left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-lg">
+          {creating ? (
+            <QuickServiceForm
+              defaultName={search}
+              categories={categories}
+              onCreated={handleCreated}
+              onCancel={() => setCreating(false)}
+            />
+          ) : (
+          <>
           {/* Search */}
           <div className="p-2 border-b border-gray-100">
             <div className="relative">
@@ -140,6 +164,19 @@ export default function ServicePicker({ services, value, onChange, placeholder =
               ))
             )}
           </div>
+
+          <div className="border-t border-gray-100 p-2">
+            <button
+              type="button"
+              onClick={() => setCreating(true)}
+              className="w-full flex items-center gap-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 rounded-lg px-2.5 py-2"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              {search ? `Crear servicio "${search}"` : "Crear servicio nuevo"}
+            </button>
+          </div>
+          </>
+          )}
         </div>
       )}
     </div>

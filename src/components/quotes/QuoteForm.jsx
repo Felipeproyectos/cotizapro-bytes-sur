@@ -148,6 +148,25 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
     recalc({ ...form, items });
   };
 
+  const handleServiceCreated = (idx, svc) => {
+    setServices(prev => [...prev, svc].sort((a, b) => (a.name || "").localeCompare(b.name || "")));
+    const rate = parseFloat(form.uf_value) || 1;
+    const price = svc.default_price || 0;
+    const qty = parseFloat(form.items[idx].quantity) || 1;
+    const items = [...form.items];
+    items[idx] = {
+      ...items[idx],
+      service_type_id: svc.id,
+      service_name: svc.name,
+      description: items[idx].description || svc.description || "",
+      unit_price: price,
+      unit_price_uf: form.currency === "UF" ? price / rate : 0,
+      total: qty * price,
+      total_uf: form.currency === "UF" ? (qty * price) / rate : 0,
+    };
+    recalc({ ...form, items });
+  };
+
   const setField = (field, val) => {
     const updated = { ...form, [field]: val };
     if (field === "payment_type") {
@@ -443,6 +462,7 @@ export default function QuoteForm({ quote, onSave, onCancel }) {
                     services={services}
                     value={item.service_type_id || ""}
                     onChange={val => updateItem(idx, "service_type_id", val)}
+                    onCreated={svc => handleServiceCreated(idx, svc)}
                   />
                 </div>
                 <div className="md:col-span-3">
