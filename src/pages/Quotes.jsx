@@ -50,7 +50,10 @@ export default function Quotes() {
 
   const handleDirectDownload = async (q) => {
     setDownloadingId(q.id);
-    try { await downloadQuotePdf(q, company); }
+    try {
+      const settings = await base44.entities.CompanySettings.list();
+      await downloadQuotePdf(q, settings[0] || company);
+    }
     catch (e) { console.error(e); }
     setDownloadingId(null);
   };
