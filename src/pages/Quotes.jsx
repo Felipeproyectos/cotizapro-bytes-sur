@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Plus, FileText, Search, Pencil, Trash2, Download, Copy, CreditCard, X, RefreshCw, Eye, Loader2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Plus, FileText, Search, Pencil, Trash2, Download, Copy, CreditCard, X, RefreshCw, Eye, Loader2, Layers } from "lucide-react";
 import { addDays, format as formatDate } from "date-fns";
 import QuoteForm from "../components/quotes/QuoteForm";
 import QuotePDF from "../components/quotes/QuotePDF";
@@ -50,10 +51,7 @@ export default function Quotes() {
 
   const handleDirectDownload = async (q) => {
     setDownloadingId(q.id);
-    try {
-      const settings = await base44.entities.CompanySettings.list();
-      await downloadQuotePdf(q, settings[0] || company);
-    }
+    try { await downloadQuotePdf(q, company); }
     catch (e) { console.error(e); }
     setDownloadingId(null);
   };
@@ -142,14 +140,22 @@ export default function Quotes() {
             <h1 className="text-2xl font-bold text-slate-900">Cotizaciones</h1>
             <p className="text-sm text-slate-500 mt-1">{quotes.length} cotizaciones en total</p>
           </div>
-          {activeTab === "cotizaciones" && (
-            <button
-              onClick={() => { setSelected(null); setView("form"); }}
-              className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors"
+          <div className="flex items-center gap-2">
+            <Link
+              to="/PropuestasPDF"
+              className="hidden sm:flex items-center gap-2 bg-white border border-gray-200 text-slate-600 px-4 py-2.5 rounded-xl text-sm font-medium hover:border-slate-400 transition-colors"
             >
-              <Plus className="w-4 h-4" /> Nueva Cotización
-            </button>
-          )}
+              <Layers className="w-4 h-4" /> Propuestas PDF
+            </Link>
+            {activeTab === "cotizaciones" && (
+              <button
+                onClick={() => { setSelected(null); setView("form"); }}
+                className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors"
+              >
+                <Plus className="w-4 h-4" /> Nueva Cotización
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Tabs */}
