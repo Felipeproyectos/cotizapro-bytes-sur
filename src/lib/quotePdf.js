@@ -1,13 +1,11 @@
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { buildQuoteHtml, DEFAULT_QUOTE_DESIGN } from "./quoteDesigns";
+import { buildQuoteHtml } from "./quoteTemplate";
 
 export { buildQuoteHtml };
 
-const designOf = (company) => company?.quote_design || DEFAULT_QUOTE_DESIGN;
-
 export async function downloadQuotePdf(quote, company) {
-  const html = buildQuoteHtml(quote, company, designOf(company));
+  const html = buildQuoteHtml(quote, company);
   const slug = (quote.title || quote.client_name || quote.quote_number || 'Cotizacion').replace(/[^\w\sáéíóúñÁÉÍÓÚÑ-]/g, '').trim().replace(/\s+/g, '_');
   const fileName = `${slug}.pdf`;
 
@@ -92,7 +90,7 @@ export async function downloadQuotePdf(quote, company) {
 }
 
 export function printQuotePdf(quote, company) {
-  const html = buildQuoteHtml(quote, company, designOf(company));
+  const html = buildQuoteHtml(quote, company);
   const fileName = `Cotizacion_${(company?.company_name || 'Empresa').replace(/\s+/g, '_')}_${quote.quote_number}`;
 
   const existing = document.getElementById("print-frame-quote");

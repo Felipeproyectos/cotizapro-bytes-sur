@@ -2,39 +2,25 @@ import { useEffect, useMemo, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { X, Printer, Share, Download, Loader2 } from "lucide-react";
 import { buildQuoteHtml, printQuotePdf, downloadQuotePdf } from "@/lib/quotePdf";
-import { QUOTE_DESIGNS, DEFAULT_QUOTE_DESIGN } from "@/lib/quoteDesigns";
 import QuotePreviewFrame from "./QuotePreviewFrame";
 
 export default function QuotePDF({ quote, onClose }) {
   const [company, setCompany] = useState(null);
-  const [design, setDesign] = useState(DEFAULT_QUOTE_DESIGN);
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     base44.entities.CompanySettings.list().then((data) => {
-      if (data && data.length > 0) {
-        setCompany(data[0]);
-        if (data[0].quote_design) setDesign(data[0].quote_design);
-      }
+      if (data && data.length > 0) setCompany(data[0]);
     });
   }, []);
 
-  const html = useMemo(() => buildQuoteHtml(quote, company, design), [quote, company, design]);
-  const companyWithDesign = { ...(company || {}), quote_design: design };
+  const html = useMemo(() => buildQuoteHtml(quote, company), [quote, company]);
 
-  const chooseDesign = async (key) => {
-    setDesign(key);
-    if (company?.id) {
-      setCompany((c) => ({ ...c, quote_design: key }));
-      await base44.entities.CompanySettings.update(company.id, { quote_design: key });
-    }
-  };
-
-  const handlePrint = () => printQuotePdf(quote, companyWithDesign);
+  const handlePrint = () => printQuotePdf(quote, company);
 
   const handleDownload = async () => {
     setDownloading(true);
-    try { await downloadQuotePdf(quote, companyWithDesign); }
+    try { await downloadQuotePdf(quote, company); }
     catch (e) { console.error(e); }
     setDownloading(false);
   };
@@ -80,22 +66,6 @@ export default function QuotePDF({ quote, onClose }) {
               <X className="w-5 h-5" />
             </button>
           </div>
-        </div>
-
-        {/* Selector de diseño */}
-        <div className="bg-white/10 backdrop-blur rounded-xl p-1.5 flex gap-1.5 mb-3">
-          {QUOTE_DESIGNS.map((dz) => (
-            <button
-              key={dz.key}
-              onClick={() => chooseDesign(dz.key)}
-              className={`select-none flex-1 text-left px-3 py-2 rounded-lg transition-colors ${
-                design === dz.key ? "bg-white text-slate-900" : "text-white/70 hover:bg-white/10"
-              }`}
-            >
-              <span className="block text-xs font-semibold">{dz.name}</span>
-              <span className={`block text-[10px] ${design === dz.key ? "text-slate-500" : "text-white/50"}`}>{dz.tagline}</span>
-            </button>
-          ))}
         </div>
 
         <div className="bg-white rounded-xl shadow-2xl overflow-hidden">
