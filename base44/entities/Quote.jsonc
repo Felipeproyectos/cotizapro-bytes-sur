@@ -82,6 +82,9 @@
           },
           "total_uf": {
             "type": "number"
+          },
+          "is_operational_expense": {
+            "type": "boolean"
           }
         }
       }
@@ -159,9 +162,14 @@
     },
     "abonos": {
       "type": "array",
+      "description": "Pagos o abonos registrados sobre la cotizaci\u00f3n",
       "items": {
         "type": "object",
         "properties": {
+          "id": {
+            "type": "string",
+            "description": "Identificador del abono (para anulaciones e idempotencia)"
+          },
           "fecha": {
             "type": "string",
             "format": "date"
@@ -170,6 +178,39 @@
             "type": "number"
           },
           "nota": {
+            "type": "string"
+          },
+          "medio_pago": {
+            "type": "string",
+            "description": "Efectivo, Transferencia, Tarjeta, Cheque u Otro"
+          },
+          "referencia": {
+            "type": "string",
+            "description": "N\u00famero de referencia o comprobante"
+          },
+          "registrado_por": {
+            "type": "string"
+          },
+          "registrado_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "request_id": {
+            "type": "string",
+            "description": "Clave de idempotencia para evitar duplicados"
+          },
+          "anulado": {
+            "type": "boolean",
+            "default": false
+          },
+          "anulado_por": {
+            "type": "string"
+          },
+          "anulado_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "anulado_motivo": {
             "type": "string"
           }
         }
@@ -185,6 +226,62 @@
         "Ejecutada"
       ],
       "default": "Borrador"
+    },
+    "work_status": {
+      "type": "string",
+      "enum": [
+        "Pendiente",
+        "En ejecuci\u00f3n",
+        "Ejecutado",
+        "Cancelado"
+      ],
+      "enumColors": [
+        "gray",
+        "blue",
+        "green",
+        "red"
+      ],
+      "description": "Estado del trabajo, independiente del estado de pago"
+    },
+    "payment_due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha de vencimiento del pago del saldo pendiente"
+    },
+    "next_followup_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha del pr\u00f3ximo seguimiento de cobranza"
+    },
+    "collection_log": {
+      "type": "array",
+      "description": "Historial cronol\u00f3gico de gestiones de cobranza (notas, pagos, anulaciones y cambios de estado)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "nota",
+              "pago",
+              "anulacion",
+              "estado",
+              "vencimiento",
+              "seguimiento"
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "user": {
+            "type": "string"
+          }
+        }
+      }
     },
     "notes": {
       "type": "string"

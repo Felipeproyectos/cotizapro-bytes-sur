@@ -17,11 +17,14 @@ import {
   StickyNote,
   Receipt,
   ShoppingCart,
+  Wallet,
 } from "lucide-react";
+import { isReceivable } from "@/lib/receivables";
 
 const navItems = [
   { name: "Dashboard", page: "Dashboard", icon: BarChart3 },
   { name: "Cotizaciones", page: "Quotes", icon: FileText },
+  { name: "Cuentas por Cobrar", page: "Receivables", icon: Wallet, short: "Cobranza" },
   { name: "Historial", page: "History", icon: Wrench },
   { name: "Gastos Operacionales", page: "OperationalExpenses", icon: TrendingDown },
   { name: "Servicios", page: "Services", icon: Wifi },
@@ -32,11 +35,12 @@ const navItems = [
   { name: "Configuración", page: "Settings", icon: Settings },
 ];
 
-const ROOT_PAGES = ["Dashboard", "Quotes", "History", "OperationalExpenses", "Services", "Settings", "CompanyDocs", "Invoices", "Purchases", "Notes"];
+const ROOT_PAGES = ["Dashboard", "Quotes", "Receivables", "History", "OperationalExpenses", "Services", "Settings", "CompanyDocs", "Invoices", "Purchases", "Notes"];
 
 export default function Layout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [company, setCompany] = useState(null);
+  const [debtCount, setDebtCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -53,7 +57,16 @@ export default function Layout({ children, currentPageName }) {
     const unsub = base44.entities.CompanySettings.subscribe((event) => {
       if (event.data) setCompany(event.data);
     });
-    return () => unsub();
+
+    const loadDebt = () =>
+      base44.entities.Quote.list("-created_date", 500).then((quotes) => setDebtCount(quotes.filter(isReceivable).length));
+    loadDebt();
+    const unsubQuotes = base44.entities.Quote.subscribe(() => loadDebt());
+
+    return () => {
+      unsub();
+      unsubQuotes();
+    };
   }, []);
 
   return (
@@ -109,7 +122,12 @@ export default function Layout({ children, currentPageName }) {
               >
                 <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-400 group-hover:text-slate-600"}`} />
                 {name}
-                {isActive && <ChevronRight className="w-3 h-3 ml-auto opacity-60" />}
+                {page === "Receivables" && debtCount > 0 && (
+                  <span className={`ml-auto text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${isActive ? "bg-white/20 text-white" : "bg-red-50 text-red-600"}`}>
+                    {debtCount}
+                  </span>
+                )}
+                {isActive && page !== "Receivables" && <ChevronRight className="w-3 h-3 ml-auto opacity-60" />}
               </Link>
             );
           })}
@@ -188,7 +206,7 @@ export default function Layout({ children, currentPageName }) {
         className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-100 flex items-stretch"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        {navItems.map(({ name, page, icon: Icon }) => {
+        {navItems.map(({ name, page, icon: Icon, short }) => {
           const isActive = currentPageName === page;
           return (
             <Link
@@ -199,7 +217,7 @@ export default function Layout({ children, currentPageName }) {
               }`}
             >
               <Icon className={`w-5 h-5 ${isActive ? "text-slate-900" : "text-slate-400"}`} />
-              <span className={`text-[10px] font-medium ${isActive ? "text-slate-900" : "text-slate-400"}`}>{name}</span>
+              <span className={`text-[10px] font-medium ${isActive ? "text-slate-900" : "text-slate-400"}`}>{short || name}</span>
             </Link>
           );
         })}

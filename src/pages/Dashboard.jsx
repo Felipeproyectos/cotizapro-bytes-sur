@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { FileText, TrendingUp, CheckCircle, Clock, Plus, ArrowUpRight, MapPin, Phone, Mail, Globe, Building2 } from "lucide-react";
 import MonthlyServicesPanel from "../components/dashboard/MonthlyServicesPanel";
+import CollectionControl from "../components/dashboard/CollectionControl";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { format, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
@@ -161,6 +162,8 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+
+        <CollectionControl />
 
         <MonthlyServicesPanel />
 

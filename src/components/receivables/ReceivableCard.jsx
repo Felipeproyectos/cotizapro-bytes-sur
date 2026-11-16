@@ -1,0 +1,66 @@
+import { ChevronRight } from "lucide-react";
+import {
+  fmtCLP,
+  fmtDate,
+  getTotalAcordado,
+  getTotalAbonado,
+  getSaldo,
+  getPaymentStatus,
+  getPaymentBadge,
+  getCollectionState,
+  getDaysOverdue,
+  workSummary,
+} from "@/lib/receivables";
+
+export default function ReceivableCard({ quote, onOpen }) {
+  const state = getCollectionState(quote);
+  const days = getDaysOverdue(quote);
+
+  return (
+    <div className="bg-white rounded-2xl border border-gray-100 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-slate-900 truncate">{quote.client_name}</p>
+          {quote.client_company && <p className="text-[11px] text-slate-400 truncate">{quote.client_company}</p>}
+          <p className="text-[11px] text-slate-500 mt-1 truncate">{workSummary(quote)}</p>
+        </div>
+        <div className="text-right shrink-0">
+          <p className="text-[11px] text-slate-400">{quote.quote_number}</p>
+          <p className="text-sm font-bold text-slate-900">{fmtCLP(getSaldo(quote))}</p>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-1.5 mt-3">
+        <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${getPaymentBadge(quote)}`}>
+          {getPaymentStatus(quote)}
+        </span>
+        <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1 ${state.badge}`}>
+          <span className={`w-1.5 h-1.5 rounded-full ${state.dot}`} />
+          {days !== null && days > 0 ? `${days} días de atraso` : state.label}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2 mt-3 text-[11px]">
+        <div>
+          <p className="text-slate-400">Total</p>
+          <p className="text-slate-700 font-medium">{fmtCLP(getTotalAcordado(quote))}</p>
+        </div>
+        <div>
+          <p className="text-slate-400">Abonado</p>
+          <p className="text-emerald-600 font-medium">{fmtCLP(getTotalAbonado(quote))}</p>
+        </div>
+        <div>
+          <p className="text-slate-400">Vence</p>
+          <p className="text-slate-700 font-medium">{quote.payment_due_date ? fmtDate(quote.payment_due_date) : "Sin fecha"}</p>
+        </div>
+      </div>
+
+      <button
+        onClick={() => onOpen(quote)}
+        className="mt-3 w-full flex items-center justify-center gap-1 text-xs font-medium text-slate-700 border border-gray-200 rounded-xl py-2 hover:border-slate-400 hover:text-slate-900"
+      >
+        Ver detalle y abonar <ChevronRight className="w-3 h-3" />
+      </button>
+    </div>
+  );
+}

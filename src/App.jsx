@@ -9,6 +9,7 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Notes from './pages/Notes';
 import Invoices from './pages/Invoices';
 import Purchases from './pages/Purchases';
+import Receivables from './pages/Receivables';
 import QuoteDesignProposals from './pages/QuoteDesignProposals';
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -64,6 +65,7 @@ const AuthenticatedApp = () => {
       <Route path="/Notes" element={<LayoutWrapper currentPageName="Notes"><Notes /></LayoutWrapper>} />
       <Route path="/Invoices" element={<LayoutWrapper currentPageName="Invoices"><Invoices /></LayoutWrapper>} />
       <Route path="/Purchases" element={<LayoutWrapper currentPageName="Purchases"><Purchases /></LayoutWrapper>} />
+      <Route path="/Receivables" element={<LayoutWrapper currentPageName="Receivables"><Receivables /></LayoutWrapper>} />
       <Route path="/PropuestasPDF" element={<LayoutWrapper currentPageName="PropuestasPDF"><QuoteDesignProposals /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
