@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { TrendingUp, AlertTriangle, Wallet } from "lucide-react";
 import PaidQuotesList from "./PaidQuotesList";
-import { fmtCLP, getAbonosVigentes, getSaldo, isReceivable } from "@/lib/receivables";
+import { fmtCLP, getAbonosVigentes, getSaldo, getDaysOverdue, isReceivable } from "@/lib/receivables";
 
 export default function CollectionReports({ quotes, onOpen }) {
   const [period, setPeriod] = useState(format(new Date(), "yyyy-MM"));
@@ -10,9 +10,8 @@ export default function CollectionReports({ quotes, onOpen }) {
   const receivables = quotes.filter(isReceivable);
   const totalPendiente = receivables.reduce((s, q) => s + getSaldo(q), 0);
   const totalVencido = receivables.reduce((s, q) => {
-    if (!q.payment_due_date) return s;
-    const due = new Date(q.payment_due_date);
-    return due < new Date(new Date().toDateString()) ? s + getSaldo(q) : s;
+    const days = getDaysOverdue(q);
+    return days !== null && days > 0 ? s + getSaldo(q) : s;
   }, 0);
 
   const recaudado = quotes.reduce(

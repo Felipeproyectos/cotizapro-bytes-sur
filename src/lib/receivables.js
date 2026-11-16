@@ -13,10 +13,21 @@ export const PROXIMO_VENCER_DIAS = 3;
 
 export const fmtCLP = (n) => `$${Math.round(Number(n) || 0).toLocaleString("es-CL")}`;
 
+/** Interpreta "AAAA-MM-DD" como fecha local (evita el desfase de zona horaria). */
+export const parseLocalDate = (value) => {
+  if (!value) return null;
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [y, m, d] = value.split("-").map(Number);
+    const date = new Date(y, m - 1, d);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
 export const fmtDate = (value) => {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
+  const d = parseLocalDate(value);
+  if (!d) return "—";
   return format(d, "dd-MM-yyyy");
 };
 
@@ -70,9 +81,8 @@ export const isReceivable = (q) =>
   !isMonthly(q) && resolveWorkStatus(q) === "Ejecutado" && getSaldo(q) > 0;
 
 export const getDaysOverdue = (q) => {
-  if (!q?.payment_due_date) return null;
-  const due = new Date(q.payment_due_date);
-  if (Number.isNaN(due.getTime())) return null;
+  const due = parseLocalDate(q?.payment_due_date);
+  if (!due) return null;
   return differenceInCalendarDays(todayStart(), due);
 };
 
