@@ -4,8 +4,9 @@ import { runAction } from "../../shared/collection.ts";
 export default async function (req) {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me().catch((e) => (e.status === 401 ? null : Promise.reject(e)));
-    if (!user) return Response.json({ error: "No autenticado" }, { status: 401 });
+    const authUser = await base44.auth.me().catch((e) => (e.status === 401 ? null : Promise.reject(e)));
+    // App pública: si no hay sesión se registra como "Usuario de la app"
+    const user = authUser || { email: "publico", full_name: "Usuario de la app" };
 
     const body = await req.json().catch(() => ({}));
     if (!body.quoteId || !body.action) {
