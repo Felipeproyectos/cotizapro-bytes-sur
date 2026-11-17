@@ -58,6 +58,19 @@ export default function Receivables() {
     setQuotes((prev) => prev.map((q) => (q.id === updated.id ? { ...q, ...updated } : q)));
   };
 
+  const handleDelete = async (quote) => {
+    const ok = window.confirm(
+      `¿Eliminar la cotización ${quote.quote_number} de ${quote.client_name || "cliente"}?\nEsta acción no se puede deshacer.`
+    );
+    if (!ok) return;
+    try {
+      await base44.entities.Quote.delete(quote.id);
+      setQuotes((prev) => prev.filter((q) => q.id !== quote.id));
+    } catch (e) {
+      window.alert("No se pudo eliminar la cotización. Intenta nuevamente.");
+    }
+  };
+
   const base = useMemo(() => quotes.filter((q) => !isMonthly(q)), [quotes]);
   const receivables = useMemo(() => base.filter(isReceivable), [base]);
   const summary = useMemo(() => summarizeReceivables(quotes), [quotes]);
@@ -170,7 +183,7 @@ export default function Receivables() {
               clients={clients}
               onExport={() => downloadReceivablesCsv(filtered)}
             />
-            <ReceivablesTable quotes={filtered} onOpen={setSelected} />
+            <ReceivablesTable quotes={filtered} onOpen={setSelected} onDelete={handleDelete} />
             <p className="text-[11px] text-slate-400 mt-3">
               {filtered.length} de {receivables.length} cuentas por cobrar · montos en pesos chilenos
             </p>

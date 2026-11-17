@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronRight, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import QuoteItemsBreakdown from "./QuoteItemsBreakdown";
 import {
   fmtCLP,
@@ -14,7 +14,7 @@ import {
   workSummary,
 } from "@/lib/receivables";
 
-export default function ReceivableRow({ quote, onOpen }) {
+export default function ReceivableRow({ quote, onOpen, onDelete }) {
   const [open, setOpen] = useState(false);
   const state = getCollectionState(quote);
   const days = getDaysOverdue(quote);
@@ -70,6 +70,14 @@ export default function ReceivableRow({ quote, onOpen }) {
             {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
             {open ? "Ocultar ítems" : `Ítems (${itemCount})`}
           </button>
+          {onDelete && (
+            <button
+              onClick={() => onDelete(quote)}
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-red-500 rounded-lg px-2 py-1 hover:bg-red-50 hover:text-red-700 whitespace-nowrap"
+            >
+              <Trash2 className="w-3 h-3" /> Eliminar
+            </button>
+          )}
         </div>
       </td>
     </tr>

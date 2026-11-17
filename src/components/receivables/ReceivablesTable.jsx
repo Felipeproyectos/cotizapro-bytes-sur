@@ -2,7 +2,7 @@ import ReceivableRow from "./ReceivableRow";
 import ReceivableCard from "./ReceivableCard";
 import { FileText } from "lucide-react";
 
-export default function ReceivablesTable({ quotes, onOpen }) {
+export default function ReceivablesTable({ quotes, onOpen, onDelete }) {
   if (!quotes.length) {
     return (
       <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
@@ -30,7 +30,7 @@ export default function ReceivablesTable({ quotes, onOpen }) {
           </thead>
           <tbody>
             {quotes.map((q) => (
-              <ReceivableRow key={q.id} quote={q} onOpen={onOpen} />
+              <ReceivableRow key={q.id} quote={q} onOpen={onOpen} onDelete={onDelete} />
             ))}
           </tbody>
         </table>
@@ -39,7 +39,7 @@ export default function ReceivablesTable({ quotes, onOpen }) {
       {/* Tarjetas (móvil) */}
       <div className="md:hidden space-y-3">
         {quotes.map((q) => (
-          <ReceivableCard key={q.id} quote={q} onOpen={onOpen} />
+          <ReceivableCard key={q.id} quote={q} onOpen={onOpen} onDelete={onDelete} />
         ))}
       </div>
     </>

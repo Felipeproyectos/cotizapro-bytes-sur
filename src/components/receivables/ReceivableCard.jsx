@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronRight, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import QuoteItemsBreakdown from "./QuoteItemsBreakdown";
 import {
   fmtCLP,
@@ -14,7 +14,7 @@ import {
   workSummary,
 } from "@/lib/receivables";
 
-export default function ReceivableCard({ quote, onOpen }) {
+export default function ReceivableCard({ quote, onOpen, onDelete }) {
   const [open, setOpen] = useState(false);
   const state = getCollectionState(quote);
   const days = getDaysOverdue(quote);
@@ -73,6 +73,15 @@ export default function ReceivableCard({ quote, onOpen }) {
         >
           Abonar <ChevronRight className="w-3 h-3" />
         </button>
+        {onDelete && (
+          <button
+            onClick={() => onDelete(quote)}
+            aria-label="Eliminar"
+            className="flex items-center justify-center text-red-500 border border-red-100 rounded-xl px-3 py-2 hover:bg-red-50 hover:text-red-700"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
       {open && (
