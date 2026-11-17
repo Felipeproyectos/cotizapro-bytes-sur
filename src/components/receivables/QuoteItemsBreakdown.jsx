@@ -1,6 +1,6 @@
 import { fmtCLP, getTotalAcordado, getTotalAbonado, getSaldo } from "@/lib/receivables";
 
-const fmtNum = (n) => (Number.isFinite(Number(n)) ? Number(n).toLocaleString("es-CL") : "0");
+const fmtNum = (n) => (Number.isFinite(Number(n)) ? Math.round(Number(n)).toLocaleString("es-CL") : "0");
 
 const fmtUF = (n) =>
   `${(Number(n) || 0).toLocaleString("es-CL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} UF`;

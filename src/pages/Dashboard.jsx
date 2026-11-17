@@ -80,7 +80,7 @@ export default function Dashboard() {
 
   const recentQuotes = quotes.slice(0, 5);
 
-  const formatCLP = (n) => `$${(n || 0).toLocaleString("es-CL")}`;
+  const formatCLP = (n) => `$${Math.round(n || 0).toLocaleString("es-CL")}`;
 
   if (loading) {
     return (

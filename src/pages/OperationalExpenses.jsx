@@ -5,7 +5,7 @@ import { format } from "date-fns";
 
 const formatCLP = (amount) => {
   if (!amount && amount !== 0) return "$0";
-  return new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", minimumFractionDigits: 0 }).format(amount);
+  return new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
 };
 
 const CATEGORIES = ["Materiales", "Herramientas", "Transporte", "Arriendo", "Servicios", "Sueldos", "Software", "Otros"];

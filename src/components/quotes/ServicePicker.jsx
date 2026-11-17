@@ -156,7 +156,7 @@ export default function ServicePicker({ services, value, onChange, onCreated, pl
                     </div>
                     {svc.description && <p className="text-xs text-slate-400 truncate mt-0.5">{svc.description}</p>}
                     {svc.default_price > 0 && (
-                      <p className="text-xs text-slate-500 mt-0.5">${svc.default_price.toLocaleString("es-CL")} · {svc.unit || "unidad"}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">${Math.round(svc.default_price || 0).toLocaleString("es-CL")} · {svc.unit || "unidad"}</p>
                     )}
                   </div>
                   {value === svc.id && <Check className="w-4 h-4 text-slate-900 mt-0.5 shrink-0" />}

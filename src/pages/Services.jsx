@@ -234,7 +234,7 @@ export default function Services() {
                   {s.description && <p className="text-xs text-slate-400 mt-0.5 truncate">{s.description}</p>}
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-sm font-semibold text-slate-900">${(s.default_price || 0).toLocaleString("es-CL")}</p>
+                  <p className="text-sm font-semibold text-slate-900">${Math.round(s.default_price || 0).toLocaleString("es-CL")}</p>
                   <p className="text-xs text-slate-400">{s.unit}</p>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
