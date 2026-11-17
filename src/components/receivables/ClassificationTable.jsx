@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, PackageCheck, Package } from "lucide-react";
 import { sendCollectionAction } from "@/lib/collectionApi";
 import { fmtCLP, fmtDate, getTotalAcordado, getSaldo, workSummary } from "@/lib/receivables";
 
-export default function ClassificationTable({ quotes, onClassified }) {
+export default function ClassificationTable({ quotes, onClassified, mode = "clasificar" }) {
   const [busyId, setBusyId] = useState(null);
   const [error, setError] = useState("");
 
@@ -23,7 +23,9 @@ export default function ClassificationTable({ quotes, onClassified }) {
   if (!quotes.length) {
     return (
       <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
-        <p className="text-sm text-slate-400">Todas las cotizaciones aceptadas o enviadas están clasificadas.</p>
+        <p className="text-sm text-slate-400">
+          {mode === "entregar" ? "No tienes trabajos pendientes de entrega." : "Todas las cotizaciones aceptadas o enviadas están clasificadas."}
+        </p>
       </div>
     );
   }
@@ -33,8 +35,9 @@ export default function ClassificationTable({ quotes, onClassified }) {
       {error && <p className="text-[11px] text-red-600">{error}</p>}
       <div className="bg-slate-50 border border-gray-100 rounded-2xl p-3">
         <p className="text-[11px] text-slate-500">
-          Estas cotizaciones todavía no tienen estado de trabajo definido. Márcalas como ejecutadas solo cuando el trabajo esté terminado:
-          entonces entrarán a cuentas por cobrar con su saldo real.
+          {mode === "entregar"
+            ? "Trabajos ejecutados o pagados que aún no entregas al cliente. Márcalos como entregados cuando los finalices."
+            : "Estas cotizaciones todavía no tienen estado de trabajo definido. Márcalas como ejecutadas solo cuando el trabajo esté terminado: entonces entrarán a cuentas por cobrar con su saldo real. Usa \"Por entregar\" si ya está listo o pagado pero aún no lo entregas."}
         </p>
       </div>
       <div className="bg-white rounded-2xl border border-gray-100 overflow-x-auto">
@@ -72,13 +75,28 @@ export default function ClassificationTable({ quotes, onClassified }) {
                 </td>
                 <td className="py-2.5 px-2 pr-4 align-top">
                   <div className="flex items-center justify-end gap-1.5">
+                    {mode !== "entregar" && (
+                      <button
+                        onClick={() => classify(q, "Por entregar")}
+                        disabled={busyId === q.id}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 border border-amber-200 bg-amber-50 rounded-lg px-2 py-1.5 hover:bg-amber-100 disabled:opacity-50 whitespace-nowrap"
+                      >
+                        <Package className="w-3 h-3" /> Por entregar
+                      </button>
+                    )}
                     <button
                       onClick={() => classify(q, "Ejecutado")}
                       disabled={busyId === q.id}
                       className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 border border-emerald-200 bg-emerald-50 rounded-lg px-2 py-1.5 hover:bg-emerald-100 disabled:opacity-50 whitespace-nowrap"
                     >
-                      {busyId === q.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
-                      Ejecutado
+                      {busyId === q.id ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : mode === "entregar" ? (
+                        <PackageCheck className="w-3 h-3" />
+                      ) : (
+                        <CheckCircle2 className="w-3 h-3" />
+                      )}
+                      {mode === "entregar" ? "Entregado" : "Ejecutado"}
                     </button>
                     <button
                       onClick={() => classify(q, "Cancelado")}

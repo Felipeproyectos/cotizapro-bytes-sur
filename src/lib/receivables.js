@@ -4,7 +4,7 @@ import { differenceInCalendarDays, format } from "date-fns";
 
 export const MEDIOS_PAGO = ["Efectivo", "Transferencia", "Tarjeta", "Cheque", "Otro"];
 
-export const WORK_STATUSES = ["Pendiente", "En ejecución", "Ejecutado", "Cancelado"];
+export const WORK_STATUSES = ["Pendiente", "En ejecución", "Por entregar", "Ejecutado", "Cancelado"];
 
 /** Días hacia adelante que se consideran "próximo a vencer". */
 export const PROXIMO_VENCER_DIAS = 3;
@@ -78,7 +78,7 @@ export const workStatusLabel = (q) => resolveWorkStatus(q) || "Sin clasificar";
 export const isMonthly = (q) => q?.billing_type === "Mensual";
 
 export const isReceivable = (q) =>
-  !isMonthly(q) && resolveWorkStatus(q) === "Ejecutado" && getSaldo(q) > 0;
+  !isMonthly(q) && ["Ejecutado", "Por entregar"].includes(resolveWorkStatus(q)) && getSaldo(q) > 0;
 
 export const getDaysOverdue = (q) => {
   const due = parseLocalDate(q?.payment_due_date);

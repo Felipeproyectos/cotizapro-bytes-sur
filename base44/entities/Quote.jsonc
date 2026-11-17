@@ -232,12 +232,14 @@
       "enum": [
         "Pendiente",
         "En ejecuci\u00f3n",
+        "Por entregar",
         "Ejecutado",
         "Cancelado"
       ],
       "enumColors": [
         "gray",
         "blue",
+        "orange",
         "green",
         "red"
       ],

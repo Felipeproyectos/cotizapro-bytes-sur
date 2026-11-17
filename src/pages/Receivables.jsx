@@ -25,6 +25,7 @@ import {
 const TABS = [
   { key: "pendientes", label: "Pendientes" },
   { key: "clasificar", label: "Por clasificar" },
+  { key: "entregar", label: "Por entregar" },
   { key: "historial", label: "Historial y reportes" },
 ];
 
@@ -78,6 +79,7 @@ export default function Receivables() {
     () => base.filter((q) => !resolveWorkStatus(q) && getSaldo(q) > 0 && ["Enviada", "Aceptada"].includes(q.status)),
     [base]
   );
+  const toDeliver = useMemo(() => base.filter((q) => resolveWorkStatus(q) === "Por entregar"), [base]);
   const paidQuotes = useMemo(
     () =>
       base.filter(
@@ -147,7 +149,7 @@ export default function Receivables() {
 
         <div className="flex flex-wrap gap-2 mb-5">
           {TABS.map((t) => {
-            const count = t.key === "pendientes" ? receivables.length : t.key === "clasificar" ? pendingClassify.length : paidQuotes.length;
+            const count = t.key === "pendientes" ? receivables.length : t.key === "clasificar" ? pendingClassify.length : t.key === "entregar" ? toDeliver.length : paidQuotes.length;
             const active = tab === t.key;
             return (
               <button
@@ -190,6 +192,8 @@ export default function Receivables() {
           </>
         ) : tab === "clasificar" ? (
           <ClassificationTable quotes={pendingClassify} onClassified={applyUpdated} />
+        ) : tab === "entregar" ? (
+          <ClassificationTable quotes={toDeliver} onClassified={applyUpdated} mode="entregar" />
         ) : (
           <CollectionReports quotes={base} onOpen={setSelected} />
         )}

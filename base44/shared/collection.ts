@@ -1,5 +1,5 @@
 export const MEDIOS_PAGO = ["Efectivo", "Transferencia", "Tarjeta", "Cheque", "Otro"];
-export const WORK_STATUSES = ["Pendiente", "En ejecución", "Ejecutado", "Cancelado"];
+export const WORK_STATUSES = ["Pendiente", "En ejecución", "Por entregar", "Ejecutado", "Cancelado"];
 
 const isDateString = (value) => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 const todayString = () => new Date().toISOString().slice(0, 10);
