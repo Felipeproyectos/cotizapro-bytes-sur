@@ -1,4 +1,6 @@
-import { ChevronRight } from "lucide-react";
+import { useState } from "react";
+import { ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
+import QuoteItemsBreakdown from "./QuoteItemsBreakdown";
 import {
   fmtCLP,
   fmtDate,
@@ -13,10 +15,13 @@ import {
 } from "@/lib/receivables";
 
 export default function ReceivableRow({ quote, onOpen }) {
+  const [open, setOpen] = useState(false);
   const state = getCollectionState(quote);
   const days = getDaysOverdue(quote);
+  const itemCount = (quote.items || []).filter((i) => !i.is_operational_expense).length;
 
   return (
+    <>
     <tr className="border-b border-gray-50 last:border-0 hover:bg-slate-50/60 transition-colors">
       <td className="py-3 pl-4 pr-2 align-top">
         <p className="text-xs font-semibold text-slate-900 whitespace-nowrap">{quote.quote_number}</p>
@@ -50,14 +55,31 @@ export default function ReceivableRow({ quote, onOpen }) {
           </span>
         </div>
       </td>
-      <td className="py-3 pl-2 pr-4 align-top text-right">
-        <button
-          onClick={() => onOpen(quote)}
-          className="inline-flex items-center gap-1 text-xs font-medium text-slate-700 border border-gray-200 rounded-lg px-2.5 py-1.5 hover:border-slate-400 hover:text-slate-900 whitespace-nowrap"
-        >
-          Abonar <ChevronRight className="w-3 h-3" />
-        </button>
+      <td className="py-3 pl-2 pr-4 align-top">
+        <div className="flex flex-col items-end gap-1">
+          <button
+            onClick={() => onOpen(quote)}
+            className="inline-flex items-center gap-1 text-xs font-medium text-slate-700 border border-gray-200 rounded-lg px-2.5 py-1.5 hover:border-slate-400 hover:text-slate-900 whitespace-nowrap"
+          >
+            Abonar <ChevronRight className="w-3 h-3" />
+          </button>
+          <button
+            onClick={() => setOpen((o) => !o)}
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 rounded-lg px-2 py-1 hover:bg-gray-100 hover:text-slate-800 whitespace-nowrap"
+          >
+            {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            {open ? "Ocultar ítems" : `Ítems (${itemCount})`}
+          </button>
+        </div>
       </td>
     </tr>
+    {open && (
+      <tr className="bg-slate-50/70 border-b border-gray-100">
+        <td colSpan={7} className="px-4 py-3">
+          <QuoteItemsBreakdown quote={quote} compact />
+        </td>
+      </tr>
+    )}
+    </>
   );
 }

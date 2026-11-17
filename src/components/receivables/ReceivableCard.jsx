@@ -1,4 +1,6 @@
-import { ChevronRight } from "lucide-react";
+import { useState } from "react";
+import { ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
+import QuoteItemsBreakdown from "./QuoteItemsBreakdown";
 import {
   fmtCLP,
   fmtDate,
@@ -13,8 +15,10 @@ import {
 } from "@/lib/receivables";
 
 export default function ReceivableCard({ quote, onOpen }) {
+  const [open, setOpen] = useState(false);
   const state = getCollectionState(quote);
   const days = getDaysOverdue(quote);
+  const itemCount = (quote.items || []).filter((i) => !i.is_operational_expense).length;
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-4">
@@ -55,12 +59,27 @@ export default function ReceivableCard({ quote, onOpen }) {
         </div>
       </div>
 
-      <button
-        onClick={() => onOpen(quote)}
-        className="mt-3 w-full flex items-center justify-center gap-1 text-xs font-medium text-slate-700 border border-gray-200 rounded-xl py-2 hover:border-slate-400 hover:text-slate-900"
-      >
-        Ver detalle y abonar <ChevronRight className="w-3 h-3" />
-      </button>
+      <div className="flex gap-2 mt-3">
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="flex-1 flex items-center justify-center gap-1 text-xs font-medium text-slate-600 border border-gray-200 rounded-xl py-2 hover:border-slate-400"
+        >
+          {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          {open ? "Ocultar ítems" : `Ítems (${itemCount})`}
+        </button>
+        <button
+          onClick={() => onOpen(quote)}
+          className="flex-1 flex items-center justify-center gap-1 text-xs font-medium text-slate-700 border border-gray-200 rounded-xl py-2 hover:border-slate-400 hover:text-slate-900"
+        >
+          Abonar <ChevronRight className="w-3 h-3" />
+        </button>
+      </div>
+
+      {open && (
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <QuoteItemsBreakdown quote={quote} compact />
+        </div>
+      )}
     </div>
   );
 }

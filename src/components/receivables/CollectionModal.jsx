@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { X, CalendarClock } from "lucide-react";
+import { X, CalendarClock, ListOrdered } from "lucide-react";
+import QuoteItemsBreakdown from "./QuoteItemsBreakdown";
 import PaymentForm from "./PaymentForm";
 import PaymentsList from "./PaymentsList";
 import CollectionStatusPanel from "./CollectionStatusPanel";
@@ -72,6 +73,18 @@ export default function CollectionModal({ quote, onClose, onUpdated }) {
             <div className="bg-slate-900 rounded-xl p-3">
               <p className="text-[10px] uppercase tracking-wider text-slate-300 font-semibold">Saldo pendiente</p>
               <p className="text-sm font-bold text-white mt-0.5">{fmtCLP(saldo)}</p>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+            <div className="px-4 py-2 border-b border-gray-100 bg-slate-50/60 flex items-center gap-1.5">
+              <ListOrdered className="w-3.5 h-3.5 text-slate-400" />
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">
+                Detalle de la cotización
+              </p>
+            </div>
+            <div className="px-4 py-3">
+              <QuoteItemsBreakdown quote={current} showSaldo={false} />
             </div>
           </div>
 
