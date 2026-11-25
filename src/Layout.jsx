@@ -18,6 +18,7 @@ import {
   Receipt,
   ShoppingCart,
   Wallet,
+  Banknote,
 } from "lucide-react";
 import { isReceivable } from "@/lib/receivables";
 
@@ -27,6 +28,7 @@ const navItems = [
   { name: "Cuentas por Cobrar", page: "Receivables", icon: Wallet, short: "Cobranza" },
   { name: "Historial", page: "History", icon: Wrench },
   { name: "Gastos Operacionales", page: "OperationalExpenses", icon: TrendingDown },
+  { name: "Giros / Retiros", page: "Withdrawals", icon: Banknote, short: "Retiros" },
   { name: "Servicios", page: "Services", icon: Wifi },
   { name: "Documentación", page: "CompanyDocs", icon: FolderOpen },
   { name: "Facturas Emitidas", page: "Invoices", icon: Receipt },
@@ -35,7 +37,7 @@ const navItems = [
   { name: "Configuración", page: "Settings", icon: Settings },
 ];
 
-const ROOT_PAGES = ["Dashboard", "Quotes", "Receivables", "History", "OperationalExpenses", "Services", "Settings", "CompanyDocs", "Invoices", "Purchases", "Notes"];
+const ROOT_PAGES = ["Dashboard", "Quotes", "Receivables", "History", "OperationalExpenses", "Services", "Settings", "CompanyDocs", "Invoices", "Purchases", "Notes", "Withdrawals"];
 
 export default function Layout({ children, currentPageName }) {
   const [mobileOpen, setMobileOpen] = useState(false);

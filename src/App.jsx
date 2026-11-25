@@ -11,6 +11,7 @@ import Invoices from './pages/Invoices';
 import Purchases from './pages/Purchases';
 import Receivables from './pages/Receivables';
 import QuoteDesignProposals from './pages/QuoteDesignProposals';
+import Withdrawals from './pages/Withdrawals';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -66,6 +67,7 @@ const AuthenticatedApp = () => {
       <Route path="/Invoices" element={<LayoutWrapper currentPageName="Invoices"><Invoices /></LayoutWrapper>} />
       <Route path="/Purchases" element={<LayoutWrapper currentPageName="Purchases"><Purchases /></LayoutWrapper>} />
       <Route path="/Receivables" element={<LayoutWrapper currentPageName="Receivables"><Receivables /></LayoutWrapper>} />
+      <Route path="/Withdrawals" element={<LayoutWrapper currentPageName="Withdrawals"><Withdrawals /></LayoutWrapper>} />
       <Route path="/PropuestasPDF" element={<LayoutWrapper currentPageName="PropuestasPDF"><QuoteDesignProposals /></LayoutWrapper>} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>

@@ -1,0 +1,70 @@
+{
+  "name": "Withdrawal",
+  "type": "object",
+  "properties": {
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha del giro o retiro"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["Giro", "Retiro", "Transferencia"],
+      "default": "Retiro",
+      "description": "Tipo de movimiento desde la cuenta principal"
+    },
+    "concept": {
+      "type": "string",
+      "description": "Motivo del giro o retiro"
+    },
+    "reference": {
+      "type": "string",
+      "description": "Número de comprobante u operación"
+    },
+    "distributions": {
+      "type": "array",
+      "description": "Monto recibido por cada socio",
+      "items": {
+        "type": "object",
+        "properties": {
+          "partner_id": { "type": "string" },
+          "partner_name": { "type": "string" },
+          "amount": { "type": "number", "minimum": 1 }
+        },
+        "required": ["partner_id", "partner_name", "amount"]
+      }
+    },
+    "total_amount": {
+      "type": "number",
+      "minimum": 1,
+      "description": "Total sacado de la cuenta principal en CLP"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notas adicionales"
+    },
+    "is_voided": {
+      "type": "boolean",
+      "default": false,
+      "description": "Movimiento anulado (se conserva para trazabilidad)"
+    },
+    "void_reason": {
+      "type": "string",
+      "description": "Motivo de la anulación"
+    },
+    "voided_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "voided_by": {
+      "type": "string"
+    }
+  },
+  "required": ["date", "type", "distributions", "total_amount"],
+  "rls": {
+    "create": { "user_condition": { "role": "admin" } },
+    "read": { "user_condition": { "role": "admin" } },
+    "update": { "user_condition": { "role": "admin" } },
+    "delete": false
+  }
+}
