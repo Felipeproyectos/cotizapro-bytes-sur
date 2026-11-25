@@ -1,4 +1,4 @@
-export const WITHDRAWAL_TYPES = ["Retiro", "Giro", "Transferencia"];
+export const WITHDRAWAL_TYPES = ["Retiro", "Giro", "Transferencia", "Gasto"];
 
 export const formatCLP = (amount) =>
   new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(amount || 0);

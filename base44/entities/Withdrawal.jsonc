@@ -9,7 +9,7 @@
     },
     "type": {
       "type": "string",
-      "enum": ["Giro", "Retiro", "Transferencia"],
+      "enum": ["Giro", "Retiro", "Transferencia", "Gasto"],
       "default": "Retiro",
       "description": "Tipo de movimiento desde la cuenta principal"
     },
