@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Banknote, Plus, UserPlus, Search, Calendar, Pencil, Ban, Lock, User } from "lucide-react";
+import { Banknote, Plus, UserPlus, Search, Calendar, Pencil, Ban, User } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { formatCLP, sumDistributions, totalsByPartner } from "@/lib/withdrawals";
@@ -9,8 +9,7 @@ import PartnerQuickForm from "@/components/withdrawals/PartnerQuickForm";
 const formatDate = (date) => (date ? date.substring(0, 10).split("-").reverse().join("-") : "");
 
 export default function Withdrawals() {
-  const { user, navigateToLogin } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const { user } = useAuth();
 
   const [movements, setMovements] = useState([]);
   const [partners, setPartners] = useState([]);
@@ -37,8 +36,8 @@ export default function Withdrawals() {
   }, []);
 
   useEffect(() => {
-    if (isAdmin) load();
-  }, [isAdmin, load]);
+    load();
+  }, [load]);
 
   const handleVoid = async (movement) => {
     const reason = prompt("Motivo de la anulación:");
@@ -48,31 +47,13 @@ export default function Withdrawals() {
         is_voided: true,
         void_reason: reason.trim(),
         voided_at: new Date().toISOString(),
-        voided_by: user.email,
+        voided_by: user?.email || "Usuario de la app",
       });
       await load();
     } catch {
       setError("No se pudo anular el movimiento.");
     }
   };
-
-  // El acceso real se controla en el backend (RLS de la entidad Withdrawal)
-  if (!isAdmin) {
-    return (
-      <div className="flex items-center justify-center min-h-screen p-6">
-        <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center max-w-sm">
-          <Lock className="w-8 h-8 text-slate-400 mx-auto mb-3" />
-          <p className="text-slate-900 font-semibold">Módulo restringido</p>
-          <p className="text-sm text-slate-500 mt-1">Solo un administrador puede ver los giros y retiros.</p>
-          {!user && (
-            <button onClick={navigateToLogin} className="mt-4 bg-slate-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-800">
-              Iniciar sesión
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return (

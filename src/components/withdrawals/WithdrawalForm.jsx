@@ -46,7 +46,7 @@ export default function WithdrawalForm({ movement, partners, onClose, onSaved })
       else await base44.entities.Withdrawal.create({ ...payload, is_voided: false });
       onSaved();
     } catch {
-      setError("No se pudo guardar el movimiento. Revisa tu sesión e inténtalo nuevamente.");
+      setError("No se pudo guardar el movimiento. Inténtalo nuevamente.");
       setSaving(false);
     }
   };
