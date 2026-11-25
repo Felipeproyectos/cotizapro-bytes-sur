@@ -2,17 +2,18 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { X } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { WITHDRAWAL_TYPES, buildDistributions, sumDistributions, parseAmount, formatCLP } from "@/lib/withdrawals";
+import { WITHDRAWAL_TYPES, buildDistributions, sumDistributions, parseAmount, formatCLP, withGeneral } from "@/lib/withdrawals";
 
 const inputClass = "w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10";
 const labelClass = "text-xs font-medium text-slate-500 mb-1.5 block";
 
 export default function WithdrawalForm({ movement, partners, onClose, onSaved }) {
   // Incluye socios eliminados que figuren en el movimiento, para no perder sus montos al editar
+  const targets = withGeneral(partners);
   const formPartners = [
-    ...partners,
+    ...targets,
     ...(movement?.distributions || [])
-      .filter((d) => !partners.some((p) => p.id === d.partner_id))
+      .filter((d) => !targets.some((p) => p.id === d.partner_id))
       .map((d) => ({ id: d.partner_id, full_name: d.partner_name })),
   ];
 
@@ -76,7 +77,7 @@ export default function WithdrawalForm({ movement, partners, onClose, onSaved })
           </div>
 
           <div className="border border-gray-100 rounded-xl p-3 space-y-3">
-            <p className="text-xs font-semibold text-slate-700">Monto recibido por cada socio (CLP) *</p>
+            <p className="text-xs font-semibold text-slate-700">Monto por socio o uso general (CLP) *</p>
             {formPartners.map((p) => (
               <label key={p.id} className="flex items-center gap-3">
                 <span className="text-sm text-slate-700 flex-1 truncate">{p.full_name}</span>

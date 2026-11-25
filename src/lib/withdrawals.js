@@ -1,5 +1,11 @@
 export const WITHDRAWAL_TYPES = ["Retiro", "Giro", "Transferencia", "Gasto"];
 
+// Destino para gastos de uso general de la empresa (no asignados a un socio)
+export const GENERAL_TARGET = { id: "general", full_name: "General" };
+
+// Socios más el destino General
+export const withGeneral = (partners) => [...partners, GENERAL_TARGET];
+
 export const formatCLP = (amount) =>
   new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(amount || 0);
 

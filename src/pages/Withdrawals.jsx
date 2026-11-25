@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Banknote, Plus, UserPlus, Search, Calendar, Pencil, Ban, User } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
-import { formatCLP, sumDistributions, totalsByPartner } from "@/lib/withdrawals";
+import { formatCLP, sumDistributions, totalsByPartner, withGeneral } from "@/lib/withdrawals";
 import WithdrawalForm from "@/components/withdrawals/WithdrawalForm";
 import PartnerQuickForm from "@/components/withdrawals/PartnerQuickForm";
 
@@ -76,10 +76,11 @@ export default function Withdrawals() {
   const active = periodMovements.filter((m) => !m.is_voided);
   const totalWithdrawn = active.reduce((sum, m) => sum + sumDistributions(m.distributions), 0);
   const byPartner = totalsByPartner(periodMovements);
+  const targets = withGeneral(partners);
   const partnerCards = [
-    ...partners.map((p) => ({ id: p.id, name: p.full_name, total: byPartner[p.id]?.total || 0 })),
+    ...targets.map((p) => ({ id: p.id, name: p.full_name, total: byPartner[p.id]?.total || 0 })),
     ...Object.entries(byPartner)
-      .filter(([id]) => !partners.some((p) => p.id === id))
+      .filter(([id]) => !targets.some((p) => p.id === id))
       .map(([id, v]) => ({ id, ...v })),
   ];
 
@@ -101,9 +102,8 @@ export default function Withdrawals() {
               className="flex items-center gap-2 border border-gray-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50">
               <UserPlus className="w-4 h-4" /> Agregar Socio
             </button>
-            <button onClick={() => setEditing({})} disabled={partners.length === 0}
-              title={partners.length === 0 ? "Primero agrega un socio" : undefined}
-              className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 disabled:opacity-50">
+            <button onClick={() => setEditing({})}
+              className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800">
               <Plus className="w-4 h-4" /> Registrar Retiro
             </button>
           </div>
@@ -135,7 +135,7 @@ export default function Withdrawals() {
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input type="text" placeholder="Buscar por concepto, socio, comprobante..." value={search}
+            <input type="text" placeholder="Buscar por concepto, socio, general, comprobante..." value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900" />
           </div>
@@ -149,7 +149,7 @@ export default function Withdrawals() {
         {filtered.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
             <p className="text-slate-500 font-medium">
-              {partners.length === 0 ? "Agrega a los socios para comenzar" : "No hay movimientos registrados"}
+              No hay movimientos registrados
             </p>
           </div>
         ) : (
