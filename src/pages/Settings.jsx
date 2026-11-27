@@ -9,8 +9,10 @@ export default function Settings() {
     rut: "",
     address: "",
     phone: "",
+    phone_secondary: "",
     email: "",
     website: "",
+    instagram: "",
     logo_url: "",
     quote_notes_default: "",
     quote_validity_days: 30,
@@ -116,8 +118,10 @@ export default function Settings() {
                 { label: "RUT", field: "rut", placeholder: "76.123.456-7" },
                 { label: "Dirección", field: "address", placeholder: "Av. Principal 123, Santiago" },
                 { label: "Teléfono", field: "phone", placeholder: "+56 2 1234 5678" },
+                { label: "Segundo teléfono", field: "phone_secondary", placeholder: "+56 9 1234 5678" },
                 { label: "Email", field: "email", placeholder: "contacto@empresa.cl" },
                 { label: "Sitio web", field: "website", placeholder: "www.empresa.cl" },
+                { label: "Instagram", field: "instagram", placeholder: "@empresa" },
               ].map(({ label, field, placeholder }) => (
                 <div key={field}>
                   <label className="text-xs font-medium text-slate-500 mb-1.5 block">{label}</label>

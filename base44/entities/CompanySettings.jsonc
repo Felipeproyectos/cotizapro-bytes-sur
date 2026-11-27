@@ -19,8 +19,16 @@
     "email": {
       "type": "string"
     },
+    "phone_secondary": {
+      "type": "string",
+      "description": "Segundo teléfono de contacto"
+    },
     "website": {
       "type": "string"
+    },
+    "instagram": {
+      "type": "string",
+      "description": "Usuario de Instagram (ej: @empresa)"
     },
     "logo_url": {
       "type": "string"
