@@ -89,7 +89,10 @@ export function buildQuoteHtml(quote, company) {
       ${itemRows(items)}
     </div>`;
 
-  const clientExtra = [quote.client_company ? `Atención: ${esc(quote.client_name)}` : "", quote.client_rut ? `RUT ${esc(quote.client_rut)}` : ""].filter(Boolean).join(" · ");
+  // El nombre del cliente va destacado; la empresa solo se muestra si es una empresa real
+  const clientCompany = /^\s*persona\s+particular\s*$/i.test(quote.client_company || "") ? "" : quote.client_company;
+  const clientMain = quote.client_name || clientCompany;
+  const clientExtra = [clientCompany && clientCompany !== clientMain ? esc(clientCompany) : "", quote.client_rut ? `RUT ${esc(quote.client_rut)}` : ""].filter(Boolean).join(" · ");
   const clientContact = [quote.client_phone, quote.client_email, quote.client_address].filter(Boolean).map(esc).join(" · ");
 
   const noteLines = (quote.notes || "").split(/\n+/).map((s) => s.trim()).filter(Boolean);
@@ -257,7 +260,7 @@ export function buildQuoteHtml(quote, company) {
     <div class="meta pdf-block">
       <div class="wide">
         <span class="label">Cliente</span>
-        <span class="value">${esc(quote.client_company || quote.client_name)}${clientExtra ? `<small>${clientExtra}</small>` : ""}${clientContact ? `<small>${clientContact}</small>` : ""}</span>
+        <span class="value">${esc(clientMain)}${clientExtra ? `<small>${clientExtra}</small>` : ""}${clientContact ? `<small>${clientContact}</small>` : ""}</span>
       </div>
       ${quote.title ? `<div class="wide"><span class="label">Proyecto</span><span class="value">${esc(quote.title)}</span></div>` : ""}
       <div><span class="label">Emisión</span><span class="value">${fmtDate(quote.created_date, "dd MMM yyyy")}</span></div>
