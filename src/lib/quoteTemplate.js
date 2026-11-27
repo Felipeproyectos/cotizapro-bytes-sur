@@ -112,13 +112,15 @@ export function buildQuoteHtml(quote, company) {
 <style>
   @page { size: A4; margin: 0; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #fff; font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
+  /* Solo Arial/Helvetica: html2canvas mide el texto con la fuente de la página y lo dibuja en canvas.
+     Fuentes de sistema (system-ui, -apple-system, Segoe UI) o web no siempre coinciden y las palabras se montan. */
+  body { background: #fff; font-family: Arial, Helvetica, sans-serif; font-kerning: none; font-feature-settings: 'liga' 0, 'calt' 0;
          color: #1F201E; font-size: 12.5px; line-height: 1.45; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   :root { --ink:#1F201E; --ink2:#44526A; --ink3:#8592A6; --line:#E3E8EF; --soft:#F5F8FB; --accent:#37BFF0; --accent-soft:#E6F6FC; --accent-dark:#0B7FB0; }
   .pdf-doc { width: 794px; min-height: 1123px; margin: 0 auto; background: #fff; display: flex; flex-direction: column; }
   .content { padding: 0 52px; }
   .top-bar { height: 5px; background: var(--accent); }
-  .label { display: block; font-size: 9px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink3); margin-bottom: 3px; }
+  .label { display: block; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink3); margin-bottom: 3px; }
 
   /* Encabezado */
   .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 32px; padding: 26px 52px 0; }
@@ -128,15 +130,15 @@ export function buildQuoteHtml(quote, company) {
   .company-info { color: var(--ink2); font-size: 11px; line-height: 1.65; margin-top: 2px; }
   .header-right { text-align: right; flex: 0 0 auto; max-width: 46%; }
   .doc-type { font-size: 10px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: var(--accent-dark); }
-  .doc-num { font-size: 24px; font-weight: 800; letter-spacing: -.02em; margin: 2px 0 8px; white-space: nowrap; }
-  .status { display: inline-block; padding: 3px 11px; border-radius: 999px; font-size: 10.5px; font-weight: 600; background: ${statusColor}1f; color: ${statusColor}; }
+  .doc-num { font-size: 24px; font-weight: 700; letter-spacing: -.02em; margin: 2px 0 8px; white-space: nowrap; }
+  .status { display: inline-block; padding: 3px 11px; border-radius: 999px; font-size: 10.5px; font-weight: 700; background: ${statusColor}1f; color: ${statusColor}; }
 
   /* Franja de datos */
   .meta { display: flex; margin: 18px 0 18px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-  .meta > div { flex: 1 1 0; padding: 12px 16px; border-left: 1px solid var(--line); min-width: 0; }
+  .meta > div { flex: 1 1 0; padding: 10px 14px; border-left: 1px solid var(--line); min-width: 0; }
   .meta > div:first-child { border-left: 0; background: var(--soft); }
   .meta > div.wide { flex: 1.7 1 0; }
-  .value { font-weight: 600; font-size: 12.5px; word-break: break-word; }
+  .value { font-weight: 700; font-size: 12px; word-break: break-word; }
   .value small { display: block; font-weight: 400; color: var(--ink2); font-size: 11px; margin-top: 1px; }
 
   .mensual { display: flex; gap: 36px; margin: -10px 0 26px; padding: 12px 16px; border-radius: 10px; background: var(--accent-soft); }
@@ -178,15 +180,15 @@ export function buildQuoteHtml(quote, company) {
   .pay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 16px; }
   .pay .value { font-size: 12px; }
   .pay-hint { margin-top: 12px; padding-top: 9px; border-top: 1px dashed #CBD3DE; font-size: 10.5px; color: var(--ink2); }
-  .row { display: flex; justify-content: space-between; gap: 12px; padding: 7px 2px; color: var(--ink2); }
-  .row b { color: var(--ink); font-weight: 600; white-space: nowrap; }
+  .row { display: flex; justify-content: space-between; gap: 12px; padding: 5px 2px; color: var(--ink2); }
+  .row b { color: var(--ink); font-weight: 700; white-space: nowrap; }
   .row.red b { color: #dc2626; } .row.green, .row.green b { color: #059669; }
   .row.sep { border-top: 1px dashed var(--line); margin-top: 4px; }
   .uf-note { text-align: right; font-size: 10px; color: var(--ink3); margin: -4px 2px 4px; }
-  .grand { margin-top: 10px; background: var(--accent); color: var(--ink); border-radius: 10px; padding: 16px 18px;
+  .grand { margin-top: 10px; background: var(--accent); color: var(--ink); border-radius: 10px; padding: 13px 16px;
            display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; }
   .grand .label { color: rgba(31,32,30,.72); margin: 0; }
-  .grand .amt { font-size: 28px; font-weight: 800; letter-spacing: -.02em; line-height: 1; white-space: nowrap; }
+  .grand .amt { font-size: 28px; font-weight: 700; letter-spacing: -.02em; line-height: 1; white-space: nowrap; }
   .grand-note { font-size: 10px; color: var(--ink3); text-align: right; margin-top: 6px; }
 
   /* Abonos */
@@ -194,7 +196,7 @@ export function buildQuoteHtml(quote, company) {
   .abono-list { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
   .abono { display: grid; grid-template-columns: 110px 1fr 130px; gap: 12px; padding: 9px 16px; }
   .abono + .abono { border-top: 1px solid var(--line); }
-  .abono > div:last-child { text-align: right; font-weight: 600; color: #059669; }
+  .abono > div:last-child { text-align: right; font-weight: 700; color: #059669; }
   .abono-sum { display: flex; justify-content: flex-end; gap: 40px; margin-top: 12px; text-align: right; }
   .abono-sum .value { font-size: 15px; }
 
@@ -204,21 +206,21 @@ export function buildQuoteHtml(quote, company) {
   .note-card { display: flex; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 11px 14px; font-size: 11.5px; }
   .note-card .ico { flex: none; width: 28px; height: 28px; border-radius: 8px; background: var(--accent-soft); color: var(--accent-dark); display: flex; align-items: center; justify-content: center; }
   .note-card .ico svg { width: 15px; height: 15px; }
-  .mini-notes { margin-top: 12px; display: flex; flex-direction: column; gap: 7px; }
-  .mini-note { display: flex; gap: 9px; align-items: flex-start; background: var(--accent-soft); border-radius: 8px; padding: 8px 11px; font-size: 11px; line-height: 1.4; color: var(--ink); }
+  .mini-notes { margin-top: 8px; display: flex; flex-direction: column; gap: 5px; }
+  .mini-note { display: flex; gap: 9px; align-items: flex-start; background: var(--accent-soft); border-radius: 8px; padding: 6px 10px; font-size: 10.5px; line-height: 1.35; color: var(--ink); }
   .mini-note .ico { flex: none; width: 14px; height: 14px; margin-top: 1px; color: var(--accent-dark); }
   .mini-note .ico svg { width: 14px; height: 14px; display: block; }
   .notes p.plain { font-size: 12px; color: var(--ink2); line-height: 1.65; white-space: pre-line; }
 
   /* Pie de página */
-  .footer { margin-top: auto; padding-top: 16px; }
+  .footer { margin-top: auto; padding-top: 12px; }
   .footer-inner { background: var(--accent-soft); border-top: 3px solid var(--accent); padding: 12px 52px 9px; color: var(--ink2); }
   .f-title { font-size: 9px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--accent-dark); margin-bottom: 7px; }
   .f-grid { display: flex; gap: 16px; }
   .f-item { flex: 1 1 0; display: flex; align-items: center; gap: 9px; min-width: 0; }
   .f-item svg { flex: none; width: 17px; height: 17px; color: var(--accent-dark); }
   .f-item .label { font-size: 8.5px; margin-bottom: 1px; }
-  .f-item b { color: var(--ink); font-weight: 600; font-size: 11px; word-break: break-word; }
+  .f-item b { color: var(--ink); font-weight: 700; font-size: 11px; word-break: break-word; }
   .f-legal { margin-top: 9px; padding-top: 6px; border-top: 1px solid rgba(11,127,176,.18); display: flex; justify-content: space-between; gap: 12px; font-size: 9.5px; color: var(--ink3); }
 
   .pdf-block, .bottom, .notes, .abonos, .footer { page-break-inside: avoid; break-inside: avoid; }
